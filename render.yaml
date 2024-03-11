@@ -1,0 +1,5 @@
+services:
+  - name: my-backend-service
+    env: node
+    startCommand: node server.js
+    port: 3005
