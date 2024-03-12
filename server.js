@@ -5,7 +5,7 @@ const app = express();
 // const { DateTime } = require("luxon");
 const axios = require("axios");
 const bodyParser = require("body-parser");
-const session = require("express-session"); // Add this line for session management
+// const session = require("express-session"); // Add this line for session management
 const multer = require("multer");
 const fs = require("fs");
 // const admin = require("firebase-admin");
@@ -339,14 +339,14 @@ app.use(cors());
 
 
 
-// Add session management middleware
-app.use(
-  session({
-    secret: "your-secret-key",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
+// // Add session management middleware
+// app.use(
+//   session({
+//     secret: "your-secret-key",
+//     resave: false,
+//     saveUninitialized: true,
+//   })
+// );
 
 //RoomsCoverImages 
 
