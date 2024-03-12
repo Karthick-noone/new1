@@ -15,7 +15,7 @@ const nodemailer = require('nodemailer');
 // const twilio = require('twilio');
 require('dotenv').config(); // Load environment variables from .env file
 // Define otpVerificationRouter before using it
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3005;
 
 app.use(cors());
 
