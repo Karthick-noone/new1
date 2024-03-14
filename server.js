@@ -986,40 +986,42 @@ app.post("/api/bookings", async (req, res) => {
 
     await pool.query("START TRANSACTION");
 
-const roomTypeValuesArray = room_type.map(
-  (room) => `${room.roomType} - ${room.roomCount}`
-);
-const roomTypeValues = roomTypeValuesArray.join(", ");
+    const roomTypeArray = room_type.map(
+      (room) => `${room.roomType} - ${room.roomCount}`
+    );
+    const roomTypeValues = roomTypeArray.join(", ");
 
- const insertQuery = `
-    INSERT INTO bookings
-    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
+    const insertQuery = `
+      INSERT INTO bookings
+      (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-// Set cancellation field to an initial value, for example 'none'
-const cancellationValue = 'none';
+    // Set cancellation field to an initial value, for example 'none'
+    const cancellationValue = 'none';
 
-await pool.query(insertQuery, [
-    name,
-    number,
-    booking_for,
-    travel_for_work,
-    roomTypeValues,
-    check_in,
-    check_out,
-    rooms,
-    adults,
-    children,
-    price,
-    length_of_stay,
-    total_amount,
-    0, // Setting paid_amount to 0 initially
-    'pending',
-    total_amount, // Setting balance_amount to total_amount initially
-    bookingDate,
-    cancellationValue // Provide a value for the cancellation field
-]);
+    const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
+
+    await pool.query(insertQuery, [
+      name,
+      number,
+      booking_for,
+      travel_for_work,
+      roomTypeValues,
+      check_in,
+      check_out,
+      rooms,
+      adults,
+      children,
+      price,
+      length_of_stay,
+      total_amount,
+      0, // Setting paid_amount to 0 initially
+      'pending',
+      total_amount, // Setting balance_amount to total_amount initially
+      bookingDate,
+      cancellationValue // Provide a value for the cancellation field
+    ]);
 
     const updateRoomsQuery = `
       UPDATE rooms
@@ -1029,9 +1031,9 @@ await pool.query(insertQuery, [
       WHERE room_type = ? AND currently_available >= ?;
     `;
 
-    const roomTypeValuesArray = roomTypeValues
-      .split(", ")
-      .map((item) => item.split(" - "));
+    const roomTypeValuesArray = roomTypeArray.map(
+      (item) => item.split(" - ")
+    );
 
     for (const [roomType, roomCount] of roomTypeValuesArray) {
       console.log(
@@ -1061,9 +1063,7 @@ await pool.query(insertQuery, [
 
     // Schedule a job to restore rooms after the length_of_stay is completed
     setTimeout(async () => {
-      for (const roomTypeCount of roomTypeArray) {
-        const [roomType, count] = roomTypeCount.split(" - ");
-
+      for (const [roomType, roomCount] of roomTypeValuesArray) {
         console.log(
           "Before Restore - Room Details:",
           roomType,
@@ -1071,7 +1071,7 @@ await pool.query(insertQuery, [
         );
 
         // Restore rooms
-        await pool.query(restoreRoomsQuery, [count, roomType]);
+        await pool.query(restoreRoomsQuery, [roomCount, roomType]);
 
         console.log(
           "After Restore - Room Details:",
@@ -1083,18 +1083,13 @@ await pool.query(insertQuery, [
       console.log("Rooms restored after length_of_stay completion");
     }, length_of_stay * 24 * 60 * 60 * 1000); // Convert length_of_stay to milliseconds
 
-    res.status(200).json({ message: "Booking successful" });
+    res.status(200).json({ message: "Booking submitted successfully" });
   } catch (error) {
+    console.error("Error submitting booking:", error);
     await pool.query("ROLLBACK");
-
-    console.error("Error submitting booking:", error.message);
-    res.status(500).json({
-      error: "Internal Server Error",
-      details: error.message || "Unknown error occurred on the server.",
-    });
+    res.status(500).json({ error: "Failed to submit booking" });
   }
 });
-
 // code 2
 app.post("/api/booking", async (req, res) => {
   console.log("Received request body:", req.body);
