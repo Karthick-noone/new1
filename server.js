@@ -986,38 +986,35 @@ app.post("/api/bookings", async (req, res) => {
 
     await pool.query("START TRANSACTION");
 
-    const insertQuery = `
+ const insertQuery = `
     INSERT INTO bookings
-    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount,booking_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  
-  const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
+    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
 
-    const roomTypeArray = room_type.map(
-      (room) => `${room.roomType} - ${room.roomCount}`
-    );
-    const roomTypeValues = roomTypeArray.join(", ");
+// Set cancellation field to an initial value, for example 'none'
+const cancellationValue = 'none';
 
-    await pool.query(insertQuery, [
-      name,
-      number,
-      booking_for,
-      travel_for_work,
-      roomTypeValues,
-      check_in,
-      check_out,
-      rooms,
-      adults,
-      children,
-      price,
-      length_of_stay,
-      total_amount,
-      0, // Setting paid_amount to 0 initially
-      'pending',
-      total_amount, // Setting balance_amount to total_amount initially
-      bookingDate
-    ]);
+await pool.query(insertQuery, [
+    name,
+    number,
+    booking_for,
+    travel_for_work,
+    roomTypeValues,
+    check_in,
+    check_out,
+    rooms,
+    adults,
+    children,
+    price,
+    length_of_stay,
+    total_amount,
+    0, // Setting paid_amount to 0 initially
+    'pending',
+    total_amount, // Setting balance_amount to total_amount initially
+    bookingDate,
+    cancellationValue // Provide a value for the cancellation field
+]);
 
     const updateRoomsQuery = `
       UPDATE rooms
