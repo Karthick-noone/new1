@@ -998,8 +998,6 @@ app.post("/api/bookings", async (req, res) => {
     `;
 
     // Set cancellation field to an initial value, for example 'none'
-    const cancellationValue = '';
-    const otpValue = ''; // Set initial value for otp as empty string
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
@@ -1021,8 +1019,8 @@ app.post("/api/bookings", async (req, res) => {
       'pending',
       total_amount, // Setting balance_amount to total_amount initially
       bookingDate,
-      cancellationValue, // Provide a value for the cancellation field
-      otpValue // Set initial value for otp
+      '', // Provide a value for the cancellation field
+      '' // Set initial value for otp
     ]);
 
     const updateRoomsQuery = `
