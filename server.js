@@ -1023,65 +1023,9 @@ app.post("/api/bookings", async (req, res) => {
       '' // Set initial value for otp
     ]);
 
-    const updateRoomsQuery = `
-      UPDATE rooms
-      SET currently_available = currently_available - ?,
-          length_of_stay = CONCAT(?, ' ', CASE WHEN ? = 1 THEN 'day' ELSE 'days' END),
-          last_updated = NOW()
-      WHERE room_type = ? AND currently_available >= ?;
-    `;
-
-    const roomTypeValuesArray = roomTypeArray.map(
-      (item) => item.split(" - ")
-    );
-
-    for (const [roomType, roomCount] of roomTypeValuesArray) {
-      console.log(
-        "Before Update - Room Details:",
-        roomType,
-        await getRoomDetails(roomType)
-      );
-
-      await pool.query(updateRoomsQuery, [
-        roomCount,
-        roomCount,
-        roomCount,
-        roomType,
-        roomCount,
-      ]);
-
-      console.log(
-        "After Update - Room Details:",
-        roomType,
-        await getRoomDetails(roomType)
-      );
-    }
-
     await pool.query("COMMIT");
 
     console.log("Booking submitted successfully");
-
-    // Schedule a job to restore rooms after the length_of_stay is completed
-    setTimeout(async () => {
-      for (const [roomType, roomCount] of roomTypeValuesArray) {
-        console.log(
-          "Before Restore - Room Details:",
-          roomType,
-          await getRoomDetails(roomType)
-        );
-
-        // Restore rooms
-        await pool.query(restoreRoomsQuery, [roomCount, roomType]);
-
-        console.log(
-          "After Restore - Room Details:",
-          roomType,
-          await getRoomDetails(roomType)
-        );
-      }
-
-      console.log("Rooms restored after length_of_stay completion");
-    }, length_of_stay * 24 * 60 * 60 * 1000); // Convert length_of_stay to milliseconds
 
     res.status(200).json({ message: "Booking submitted successfully" });
   } catch (error) {
