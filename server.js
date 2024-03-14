@@ -986,6 +986,11 @@ app.post("/api/bookings", async (req, res) => {
 
     await pool.query("START TRANSACTION");
 
+const roomTypeValuesArray = room_type.map(
+  (room) => `${room.roomType} - ${room.roomCount}`
+);
+const roomTypeValues = roomTypeValuesArray.join(", ");
+
  const insertQuery = `
     INSERT INTO bookings
     (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
