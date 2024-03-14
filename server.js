@@ -20,16 +20,16 @@ const port = process.env.PORT || 3005;
 app.use(cors());
 
 
-// Establish database connection
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('Failed to connect to the database:', err);
-  } else {
-    console.log('Connected to the database');
-    // Release the connection
-    connection.release();
-  }
-});
+// // Establish database connection
+// pool.getConnection((err, connection) => {
+//   if (err) {
+//     console.error('Failed to connect to the database:', err);
+//   } else {
+//     console.log('Connected to the database');
+//     // Release the connection
+//     connection.release();
+//   }
+// });
 
 const fast2sms = require('fast-two-sms')
 
