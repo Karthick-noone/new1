@@ -4,13 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "react-scripts build",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@vonage/server-sdk": "^3.12.2",
     "axios": "^1.6.4",
@@ -20,7 +15,6 @@
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "express-fileupload": "^1.4.3",
-    "express-session": "^1.17.3",
     "fast-two-sms": "^3.0.0",
     "firebase-admin": "^12.0.0",
     "luxon": "^3.4.4",
@@ -29,7 +23,6 @@
     "mysql2": "^3.6.5",
     "nodemailer": "^6.9.9",
     "path": "^0.12.7",
-    "react-scripts": "^5.0.1",
     "twilio": "^4.21.0"
   }
 }
