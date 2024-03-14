@@ -993,12 +993,13 @@ app.post("/api/bookings", async (req, res) => {
 
     const insertQuery = `
       INSERT INTO bookings
-      (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation, otp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     // Set cancellation field to an initial value, for example 'none'
-    const cancellationValue = 'none';
+    const cancellationValue = '';
+    const otpValue = ''; // Set initial value for otp as empty string
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
@@ -1020,7 +1021,8 @@ app.post("/api/bookings", async (req, res) => {
       'pending',
       total_amount, // Setting balance_amount to total_amount initially
       bookingDate,
-      cancellationValue // Provide a value for the cancellation field
+      cancellationValue, // Provide a value for the cancellation field
+      otpValue // Set initial value for otp
     ]);
 
     const updateRoomsQuery = `
