@@ -4,7 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+     "build": "echo 'No build necessary'"
+
   },
   "dependencies": {
     "@vonage/server-sdk": "^3.12.2",
