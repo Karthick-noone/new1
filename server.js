@@ -15,7 +15,7 @@ const nodemailer = require('nodemailer');
 // const twilio = require('twilio');
 require('dotenv').config(); // Load environment variables from .env file
 // Define otpVerificationRouter before using it
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT || 3005;
 
 app.use(cors());
 
@@ -986,18 +986,20 @@ app.post("/api/bookings", async (req, res) => {
 
     await pool.query("START TRANSACTION");
 
-    const insertQuery = `
-    INSERT INTO bookings
-    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount,booking_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  
-  const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
-
     const roomTypeArray = room_type.map(
       (room) => `${room.roomType} - ${room.roomCount}`
     );
     const roomTypeValues = roomTypeArray.join(", ");
+
+    const insertQuery = `
+      INSERT INTO bookings
+      (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation, otp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    // Set cancellation field to an initial value, for example 'none'
+
+    const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
     await pool.query(insertQuery, [
       name,
@@ -1016,83 +1018,22 @@ app.post("/api/bookings", async (req, res) => {
       0, // Setting paid_amount to 0 initially
       'pending',
       total_amount, // Setting balance_amount to total_amount initially
-      bookingDate
+      bookingDate,
+      '', // Provide a value for the cancellation field
+      '' // Set initial value for otp
     ]);
-
-    const updateRoomsQuery = `
-      UPDATE rooms
-      SET currently_available = currently_available - ?,
-          length_of_stay = CONCAT(?, ' ', CASE WHEN ? = 1 THEN 'day' ELSE 'days' END),
-          last_updated = NOW()
-      WHERE room_type = ? AND currently_available >= ?;
-    `;
-
-    const roomTypeValuesArray = roomTypeValues
-      .split(", ")
-      .map((item) => item.split(" - "));
-
-    for (const [roomType, roomCount] of roomTypeValuesArray) {
-      console.log(
-        "Before Update - Room Details:",
-        roomType,
-        await getRoomDetails(roomType)
-      );
-
-      await pool.query(updateRoomsQuery, [
-        roomCount,
-        roomCount,
-        roomCount,
-        roomType,
-        roomCount,
-      ]);
-
-      console.log(
-        "After Update - Room Details:",
-        roomType,
-        await getRoomDetails(roomType)
-      );
-    }
 
     await pool.query("COMMIT");
 
     console.log("Booking submitted successfully");
 
-    // Schedule a job to restore rooms after the length_of_stay is completed
-    setTimeout(async () => {
-      for (const roomTypeCount of roomTypeArray) {
-        const [roomType, count] = roomTypeCount.split(" - ");
-
-        console.log(
-          "Before Restore - Room Details:",
-          roomType,
-          await getRoomDetails(roomType)
-        );
-
-        // Restore rooms
-        await pool.query(restoreRoomsQuery, [count, roomType]);
-
-        console.log(
-          "After Restore - Room Details:",
-          roomType,
-          await getRoomDetails(roomType)
-        );
-      }
-
-      console.log("Rooms restored after length_of_stay completion");
-    }, length_of_stay * 24 * 60 * 60 * 1000); // Convert length_of_stay to milliseconds
-
-    res.status(200).json({ message: "Booking successful" });
+    res.status(200).json({ message: "Booking submitted successfully" });
   } catch (error) {
+    console.error("Error submitting booking:", error);
     await pool.query("ROLLBACK");
-
-    console.error("Error submitting booking:", error.message);
-    res.status(500).json({
-      error: "Internal Server Error",
-      details: error.message || "Unknown error occurred on the server.",
-    });
+    res.status(500).json({ error: "Failed to submit booking" });
   }
 });
-
 // code 2
 app.post("/api/booking", async (req, res) => {
   console.log("Received request body:", req.body);
@@ -1623,6 +1564,6 @@ app.get('/', (req, res) => {
     res.send('Hello, World!');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
