@@ -1075,24 +1075,33 @@ app.post("/api/booking", async (req, res) => {
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
-    await pool.query(insertQuery, [
-      name,
-      number,
-      booking_for,
-      travel_for_work,
-      room_type,
-      check_in,
-      check_out,
-      adults,
-      rooms,
-      children,
-      price,
-      length_of_stay,
-      total_amount,
-      paid_amount,
-      balanceAmount,
-      bookingDate
-    ]);
+  // Convert the total_amount to a decimal value before inserting into the database
+const totalPrice = parseFloat(total_amount);
+
+// Check if the totalPrice is a valid number
+if (isNaN(totalPrice)) {
+  throw new Error("Invalid total amount: " + total_amount);
+}
+
+// Use the totalPrice in the insert query
+await pool.query(insertQuery, [
+  name,
+  number,
+  booking_for,
+  travel_for_work,
+  room_type,
+  check_in,
+  check_out,
+  adults,
+  rooms,
+  children,
+  totalPrice, // Use totalPrice instead of total_amount
+  length_of_stay,
+  totalPrice, // Use totalPrice instead of total_amount
+  paid_amount,
+  balanceAmount,
+  bookingDate
+]);
 
 
     const updateRoomsQuery = `
