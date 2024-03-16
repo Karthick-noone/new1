@@ -1069,8 +1069,8 @@ app.post("/api/booking", async (req, res) => {
 
     const insertQuery = `
     INSERT INTO bookings
-    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, adults, rooms, children, price, length_of_stay, total_amount, paid_amount, balance_amount, timestamp, payment_status, booking_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'pending', ?)
+    (name, number, booking_for, travel_for_work, room_type, check_in, check_out, adults, rooms, children, price, length_of_stay, total_amount, paid_amount, balance_amount, timestamp, payment_status, booking_date,cancellation, otp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'pending', ?, ?, ?)
   `;
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
@@ -1100,7 +1100,9 @@ await pool.query(insertQuery, [
   totalPrice, // Use totalPrice instead of total_amount
   paid_amount,
   balanceAmount,
-  bookingDate
+  bookingDate,
+  '',
+  ''
 ]);
 
 
