@@ -1465,18 +1465,17 @@ app.post("/api/available-rooms", async (req, res) => {
   const dateRangeQuery = `
   SELECT room_type
   FROM bookings
-  WHERE (check_in <= ? AND check_out >= ?)
-    OR (check_in <= ? AND check_out >= ?)
-    OR (check_in >= ? AND check_out <= ?);
+  WHERE 
+    (check_in <= ? AND check_out > ?)   -- Check if new check-in date is within an existing booking
+    OR 
+    (check_in < ? AND check_out >= ?);  -- Check if new check-out date is within an existing booking
 `;
 
 const dateRangeResult = await pool.query(dateRangeQuery, [
-  formattedCheckInDate,
-  formattedCheckInDate,
-  formattedCheckOutDate,
-  formattedCheckOutDate,
+  formattedCheckOutDate, // Parameters are reversed because of SQL's BETWEEN clause
   formattedCheckInDate,
   formattedCheckOutDate,
+  formattedCheckInDate,
 ]);
 
 
