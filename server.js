@@ -1459,13 +1459,13 @@ app.post("/api/available-rooms", async (req, res) => {
     const formattedCheckOutDate = formatDate(checkOutDate);
 
     // Log the formatted dates
-    console.log('Formatted Check-in Date:', formattedCheckInDate);
-    console.log('Formatted Check-out Date:', formattedCheckOutDate);
+    console.log('Checking for bookings between:', formattedCheckInDate, 'and', formattedCheckOutDate);
 
+    // Prepare the SQL query to check if the date range exists in the database
     const dateRangeQuery = `
       SELECT room_type
       FROM bookings
-      WHERE check_in = ? AND check_out = ?;
+      WHERE check_in = ? OR check_out = ?;
     `;
 
     // Execute the query with the formatted dates as parameters
