@@ -1464,12 +1464,12 @@ app.post("/api/available-rooms", async (req, res) => {
    const dateRangeQuery = `
     SELECT room_type
     FROM bookings
-    WHERE (check_in BETWEEN ? AND ?)
-        OR (check_out BETWEEN ? AND ?);
+WHERE check_in = ? AND check_out = ?;
+
 `;
 
 // Execute the query with the formatted dates as parameters
-const dateRangeResult = await pool.query(dateRangeQuery, [formattedCheckInDate, formattedCheckOutDate, formattedCheckInDate, formattedCheckOutDate]);
+const dateRangeResult = await pool.query(dateRangeQuery, [formattedCheckInDate, formattedCheckOutDate]);
 
     // Log the result of the query
     console.log('Date range query result:', dateRangeResult);
