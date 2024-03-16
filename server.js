@@ -1465,7 +1465,7 @@ app.post("/api/available-rooms", async (req, res) => {
     const dateRangeQuery = `
       SELECT room_type
       FROM bookings
-      WHERE check_in = ? OR check_out = ?;
+      WHERE check_in => ? OR check_out <= ?;
     `;
 
     // Execute the query with the formatted dates as parameters
