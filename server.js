@@ -1462,19 +1462,22 @@ app.post("/api/available-rooms", async (req, res) => {
     console.log('Checking for bookings between:', formattedCheckInDate, 'and', formattedCheckOutDate);
 
     // Prepare the SQL query to check if the date range exists in the database
-    const dateRangeQuery = `
-    SELECT room_type
-    FROM bookings
-    WHERE (check_in <= ? AND check_out >= ?)
-      OR (check_in <= ? AND check_out >= ?);
-  `;
-  
-  const dateRangeResult = await pool.query(dateRangeQuery, [
-    formattedCheckInDate,
-    formattedCheckInDate,
-    formattedCheckOutDate,
-    formattedCheckOutDate,
-  ]);
+  const dateRangeQuery = `
+  SELECT room_type
+  FROM bookings
+  WHERE (check_in <= ? AND check_out >= ?)
+    OR (check_in <= ? AND check_out >= ?)
+    OR (check_in >= ? AND check_out <= ?);
+`;
+
+const dateRangeResult = await pool.query(dateRangeQuery, [
+  formattedCheckInDate,
+  formattedCheckInDate,
+  formattedCheckOutDate,
+  formattedCheckOutDate,
+  formattedCheckInDate,
+  formattedCheckOutDate,
+]);
 
 
     // Log the result of the query
