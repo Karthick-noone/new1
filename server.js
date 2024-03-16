@@ -1464,8 +1464,9 @@ app.post("/api/available-rooms", async (req, res) => {
     // Prepare the SQL query to check if the date range exists in the database
     const dateRangeQuery = `
       SELECT room_type
-      FROM bookings
-      WHERE (check_in BETWEEN ? AND ?) OR (check_out BETWEEN ? AND ?);
+FROM bookings
+WHERE (check_in BETWEEN 'formattedCheckInDate' AND 'formattedCheckOutDate')
+    OR (check_out BETWEEN 'formattedCheckInDate' AND 'formattedCheckOutDate');
     `;
 
     // Execute the query with the formatted dates as parameters
