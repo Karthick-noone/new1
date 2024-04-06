@@ -19,17 +19,17 @@ const port = process.env.PORT || 3005;
 
 app.use(cors());
 
-// Middleware to log requests
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+// // Middleware to log requests
+// app.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url}`);
+//   next();
+// });
 
-// Middleware to log errors
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
+// // Middleware to log errors
+// app.use((err, req, res, next) => {
+//   console.error(err.stack);
+//   res.status(500).send('Something broke!');
+// });
 
 // // Establish database connection
 // pool.getConnection((err, connection) => {
