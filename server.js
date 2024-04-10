@@ -1612,17 +1612,17 @@ app.post("/api/change-password", async (req, res) => {
   }
 });
 
-// app.get('/', (req, res) => {
-//     res.send('Hello, World!');
-// });
-
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '..', 'fabro',  'build')));
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname,  '..', 'fabro', 'build', 'index.html'));
+app.get('/', (req, res) => {
+    res.send('Hello, World!');
 });
+
+// // Serve static files from the React app
+// app.use(express.static(path.join(__dirname, '..', 'fabro',  'build')));
+
+// // Handle React routing, return all requests to React app
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname,  '..', 'fabro', 'build', 'index.html'));
+// });
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
