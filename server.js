@@ -637,14 +637,14 @@ const coverImageStorage = multer.diskStorage({
 // Define storage for multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const roomType = req.params.roomType;
+    const roomType = req.query.roomType;
     console.log("room", roomType);
     const destinationFolder = `./uploads/${roomType}`;
     fs.mkdirSync(destinationFolder, { recursive: true });
     cb(null, destinationFolder);
   },
   filename: (req, file, cb) => {
-    const roomType = req.params.roomType; // Retrieve roomType from query
+    const roomType = req.query.roomType; // Retrieve roomType from query
     const timestamp = Date.now(); // Get current timestamp
     const fileName = `${timestamp}_${file.originalname}`; // Append timestamp to filename
     const destinationPath = `./uploads/${roomType}/${fileName}`;
