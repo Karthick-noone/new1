@@ -1576,80 +1576,6 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
 
 //here due to the date issue i changed the dates by one day forward
 
-// app.post("/api/available-rooms", (req, res) => {
-//   try {
-//     const { checkInDate, checkOutDate } = req.body;
-
-//     // Function to format the date in the desired format (e.g., "Thu Apr 18 2024")
-//     const formatDate = (dateString) => {
-//       const date = new Date(dateString);
-//       const options = {
-//         weekday: "short",
-//         month: "short",
-//         day: "2-digit",
-//         year: "numeric",
-//       };
-//       return date.toLocaleDateString("en-US", options).replace(/,/g, ""); // Remove commas from the formatted date
-//     };
-
-//     // Parse check-in and check-out dates
-//     const checkIn = new Date(checkInDate);
-//     const checkOut = new Date(checkOutDate);
-
-//     // Increment both check-in and check-out dates by one day
-//     checkIn.setDate(checkIn.getDate() + 1);
-//     checkOut.setDate(checkOut.getDate() + 1);
-
-//     // Format the adjusted check-in and check-out dates
-//     const formattedCheckInDate = formatDate(checkIn);
-//     const formattedCheckOutDate = formatDate(checkOut);
-
-//     // Log the formatted dates
-//     console.log(
-//       "Checking for bookings between:",
-//       formattedCheckInDate,
-//       "and",
-//       formattedCheckOutDate
-//     );
-
-//     // Prepare the SQL query to check if the date range exists in the database
-//     const dateRangeQuery = `
-//       SELECT room_type
-//       FROM bookings
-//       WHERE check_in = ? OR check_out = ?;
-//     `;
-
-//     // Execute the query with the formatted dates as parameters
-//     pool.query(
-//       dateRangeQuery,
-//       [formattedCheckInDate, formattedCheckOutDate],
-//       (err, result) => {
-//         if (err) {
-//           console.error("Error executing MySQL query:", err);
-//           return res.status(500).json({ error: "Internal Server Error" });
-//         }
-
-//         // Extract room types from the query result
-//         const roomTypes = result.map((row) => row.room_type).join(",");
-
-//         // Log the room types
-//         console.log("Room types:", roomTypes);
-
-//         // Send the room types as part of the JSON response
-//         res.status(200).json({ roomTypes });
-//       }
-//     );
-//   } catch (error) {
-//     // Handle any errors that occur during the process
-//     console.error("Error fetching available rooms:", error.message);
-//     res.status(500).json({
-//       error: "Internal Server Error",
-//       details: error.message || "Unknown error occurred on the server.",
-//     });
-//   }
-// });
-
-/////////////////////////////////////////////////////
 app.post("/api/available-rooms", (req, res) => {
   try {
     const { checkInDate, checkOutDate } = req.body;
@@ -1657,16 +1583,34 @@ app.post("/api/available-rooms", (req, res) => {
     // Function to format the date in the desired format (e.g., "Thu Apr 18 2024")
     const formatDate = (dateString) => {
       const date = new Date(dateString);
-      const options = { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' };
-      return date.toLocaleDateString('en-US', options).replace(/,/g, ''); // Remove commas from the formatted date
+      const options = {
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+      };
+      return date.toLocaleDateString("en-US", options).replace(/,/g, ""); // Remove commas from the formatted date
     };
 
-    // Format the check-in and check-out dates
-    const formattedCheckInDate = formatDate(checkInDate);
-    const formattedCheckOutDate = formatDate(checkOutDate);
+    // Parse check-in and check-out dates
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+
+    // Increment both check-in and check-out dates by one day
+    checkIn.setDate(checkIn.getDate() + 1);
+    checkOut.setDate(checkOut.getDate() + 1);
+
+    // Format the adjusted check-in and check-out dates
+    const formattedCheckInDate = formatDate(checkIn);
+    const formattedCheckOutDate = formatDate(checkOut);
 
     // Log the formatted dates
-    console.log('Checking for bookings between:', formattedCheckInDate, 'and', formattedCheckOutDate);
+    console.log(
+      "Checking for bookings between:",
+      formattedCheckInDate,
+      "and",
+      formattedCheckOutDate
+    );
 
     // Prepare the SQL query to check if the date range exists in the database
     const dateRangeQuery = `
@@ -1676,21 +1620,25 @@ app.post("/api/available-rooms", (req, res) => {
     `;
 
     // Execute the query with the formatted dates as parameters
-    pool.query(dateRangeQuery, [formattedCheckInDate, formattedCheckOutDate], (err, result) => {
-      if (err) {
-        console.error("Error executing MySQL query:", err);
-        return res.status(500).json({ error: "Internal Server Error" });
+    pool.query(
+      dateRangeQuery,
+      [formattedCheckInDate, formattedCheckOutDate],
+      (err, result) => {
+        if (err) {
+          console.error("Error executing MySQL query:", err);
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+
+        // Extract room types from the query result
+        const roomTypes = result.map((row) => row.room_type).join(",");
+
+        // Log the room types
+        console.log("Room types:", roomTypes);
+
+        // Send the room types as part of the JSON response
+        res.status(200).json({ roomTypes });
       }
-
-      // Extract room types from the query result
-      const roomTypes = result.map(row => row.room_type).join(',');
-
-      // Log the room types
-      console.log('Room types:', roomTypes);
-
-      // Send the room types as part of the JSON response
-      res.status(200).json({ roomTypes });
-    });
+    );
   } catch (error) {
     // Handle any errors that occur during the process
     console.error("Error fetching available rooms:", error.message);
@@ -1700,6 +1648,58 @@ app.post("/api/available-rooms", (req, res) => {
     });
   }
 });
+
+/////////////////////////////////////////////////////
+// app.post("/api/available-rooms", (req, res) => {
+//   try {
+//     const { checkInDate, checkOutDate } = req.body;
+
+//     // Function to format the date in the desired format (e.g., "Thu Apr 18 2024")
+//     const formatDate = (dateString) => {
+//       const date = new Date(dateString);
+//       const options = { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' };
+//       return date.toLocaleDateString('en-US', options).replace(/,/g, ''); // Remove commas from the formatted date
+//     };
+
+//     // Format the check-in and check-out dates
+//     const formattedCheckInDate = formatDate(checkInDate);
+//     const formattedCheckOutDate = formatDate(checkOutDate);
+
+//     // Log the formatted dates
+//     console.log('Checking for bookings between:', formattedCheckInDate, 'and', formattedCheckOutDate);
+
+//     // Prepare the SQL query to check if the date range exists in the database
+//     const dateRangeQuery = `
+//       SELECT room_type
+//       FROM bookings
+//       WHERE check_in = ? OR check_out = ?;
+//     `;
+
+//     // Execute the query with the formatted dates as parameters
+//     pool.query(dateRangeQuery, [formattedCheckInDate, formattedCheckOutDate], (err, result) => {
+//       if (err) {
+//         console.error("Error executing MySQL query:", err);
+//         return res.status(500).json({ error: "Internal Server Error" });
+//       }
+
+//       // Extract room types from the query result
+//       const roomTypes = result.map(row => row.room_type).join(',');
+
+//       // Log the room types
+//       console.log('Room types:', roomTypes);
+
+//       // Send the room types as part of the JSON response
+//       res.status(200).json({ roomTypes });
+//     });
+//   } catch (error) {
+//     // Handle any errors that occur during the process
+//     console.error("Error fetching available rooms:", error.message);
+//     res.status(500).json({
+//       error: "Internal Server Error",
+//       details: error.message || "Unknown error occurred on the server.",
+//     });
+//   }
+// });
 /////////////////////////////////////////////////////
 // Handle password change request
 app.post("/api/change-password", async (req, res) => {
