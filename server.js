@@ -1156,8 +1156,8 @@ app.post("/api/bookings", async (req, res) => {
 
     const insertQuery = `
   INSERT INTO bookings
-  (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, cancellation, otp)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
@@ -1185,6 +1185,7 @@ app.post("/api/bookings", async (req, res) => {
       "pending",
       total_amount, // Setting balance_amount to total_amount initially
       bookingDate,
+      '',
       '',
     ]);
 
