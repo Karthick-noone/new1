@@ -19,6 +19,23 @@ require("dotenv").config(); // Load environment variables from .env file
 const PORT = process.env.PORT || 5000;
 //////////////////////////////////////////////
 
+
+//////////////////////////////////////////////
+// Middleware function to check for direct access to API routes
+const preventDirectAccessToApi = (req, res, next) => {
+  const isApiRequest = req.originalUrl.startsWith("/");
+  if (isApiRequest && !req.headers.referer) {
+    // If it's an API request and there's no Referer header, respond with an error
+    return res.status(403).json({ error: "Direct access to API not allowed" });
+  }
+  // If it's not an API request or if there's a Referer header, proceed to the next middleware/route handler
+  next();
+};
+
+// Apply the middleware to all routes
+app.use(preventDirectAccessToApi);
+///////////////////////////////////////////////
+
 ///////////////////////////////////////////////
 
 app.use(cors());
