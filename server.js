@@ -238,7 +238,6 @@ app.put("/api/updateStatus", async (req, res) => {
   }
 });
 
-
 // Fetch the status of the switch for all room types
 app.get("/api/getStatuss", (req, res) => {
   // Execute the query
@@ -1057,22 +1056,26 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
         INSERT INTO notification (notify)
         VALUES (?);
       `;
-      pool.query(insertNotificationQuery, [notificationMessage], (err, result) => {
-        if (err) {
-          console.error("Error inserting notification:", err);
-          res.status(500).json({
-            error: "Internal Server Error",
-            details: "An error occurred while inserting notification.",
-          });
-          return;
+      pool.query(
+        insertNotificationQuery,
+        [notificationMessage],
+        (err, result) => {
+          if (err) {
+            console.error("Error inserting notification:", err);
+            res.status(500).json({
+              error: "Internal Server Error",
+              details: "An error occurred while inserting notification.",
+            });
+            return;
+          }
+
+          // Commit transaction
+          pool.query("COMMIT");
+
+          console.log("Booking cancelled successfully");
+          res.status(200).json({ message: "Booking cancelled successfully" });
         }
-
-        // Commit transaction
-        pool.query("COMMIT");
-
-        console.log("Booking cancelled successfully");
-        res.status(200).json({ message: "Booking cancelled successfully" });
-      });
+      );
     });
   } catch (error) {
     // Rollback transaction on error
@@ -1175,15 +1178,13 @@ app.get("/api/booking/:id/cancellationStatus", (req, res) => {
 const addNotification = async (message) => {
   try {
     // Add a new notification to the database
-    await pool.query('INSERT INTO notification (notify) VALUES (?)', [message]);
-    console.log('Notification added successfully.');
+    await pool.query("INSERT INTO notification (notify) VALUES (?)", [message]);
+    console.log("Notification added successfully.");
   } catch (error) {
-    console.error('Error adding notification:', error);
+    console.error("Error adding notification:", error);
     throw error; // Handle the error as needed
   }
 };
-
- 
 
 app.post("/api/bookings", async (req, res) => {
   console.log("Received request body:", req.body);
@@ -1215,26 +1216,27 @@ app.post("/api/bookings", async (req, res) => {
 
     const insertQuery = `
       INSERT INTO bookings
-      (order_id, name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (order_id, name, number, booking_for, travel_for_work, room_type, check_in, check_out, rooms, adults, children, price, length_of_stay, total_amount, paid_amount, payment_status, balance_amount, booking_date, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     function generateOrderId() {
       const prefix = "ORD"; // Static prefix for order ID
       // const timestamp = Date.now(); // Current timestamp
       const randomSuffix = Math.floor(100000 + Math.random() * 900000); // Random five-digit number
-      
+
       // Concatenate components to form the order ID
-      const orderId =prefix+randomSuffix;
-      
+      const orderId = prefix + randomSuffix;
+
       return orderId;
     }
-    
+
     // Example usage
     const orderId = generateOrderId();
     console.log(orderId);
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
+    const currentTimestamp = new Date(); // Current timestamp
 
     const roomTypeArray = room_type.map(
       (room) => `${room.roomType} - ${room.roomCount}`
@@ -1260,12 +1262,15 @@ app.post("/api/bookings", async (req, res) => {
       "pending",
       total_amount, // Setting balance_amount to total_amount initially
       bookingDate,
+      currentTimestamp,
     ]);
 
     pool.query("COMMIT");
 
     // Add a notification for the new booking
-    const notificationMessage = `New booking made by ${name} for ${length_of_stay === 1 ? 'day' : 'days'} from ${check_in} to ${check_out}`;
+    const notificationMessage = `New booking made by ${name} for ${
+      length_of_stay === 1 ? "day" : "days"
+    } from ${check_in} to ${check_out}`;
     await addNotification(notificationMessage);
 
     console.log("Booking submitted successfully");
@@ -1281,7 +1286,6 @@ app.post("/api/bookings", async (req, res) => {
     });
   }
 });
-
 
 // code 2
 app.post("/api/booking", async (req, res) => {
@@ -1313,17 +1317,33 @@ app.post("/api/booking", async (req, res) => {
 
     pool.query("START TRANSACTION");
 
+    function generateOrderId() {
+      const prefix = "ORD"; // Static prefix for order ID
+      // const timestamp = Date.now(); // Current timestamp
+      const randomSuffix = Math.floor(100000 + Math.random() * 900000); // Random five-digit number
+
+      // Concatenate components to form the order ID
+      const orderId = prefix + randomSuffix;
+
+      return orderId;
+    }
+
+    // Example usage
+    const orderId = generateOrderId();
+    console.log(orderId);
+
     const balanceAmount = total_amount - paid_amount;
 
     const insertQuery = `
       INSERT INTO bookings
-      (name, number, booking_for, travel_for_work, room_type, check_in, check_out, adults, rooms, children, price, length_of_stay, total_amount, paid_amount, balance_amount, timestamp, payment_status, booking_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'pending', ?)
+      (order_id, name, number, booking_for, travel_for_work, room_type, check_in, check_out, adults, rooms, children, price, length_of_stay, total_amount, paid_amount, balance_amount, timestamp, payment_status, booking_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'pending', ?)
     `;
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
     pool.query(insertQuery, [
+      orderId,
       name,
       number,
       booking_for,
@@ -1732,18 +1752,18 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
 app.post("/api/available-rooms", (req, res) => {
   try {
     const { checkInDate, checkOutDate } = req.body;
-console.log("req.body",req.body)
+    console.log("req.body", req.body);
     // Function to format the date in the desired format (e.g., "Thu Apr 18 2024")
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = {
-    weekday: "short",
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  };
-  return date.toLocaleDateString("en-US", options).replace(/,/g, ""); // Remove commas from the formatted date
-};
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const options = {
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+      };
+      return date.toLocaleDateString("en-US", options).replace(/,/g, ""); // Remove commas from the formatted date
+    };
 
     // Format the check-in and check-out dates
     const formattedCheckInDate = formatDate(checkInDate);
@@ -1795,7 +1815,6 @@ const formatDate = (dateString) => {
     });
   }
 });
-
 
 /////////////////////////////////////////////////////
 // Handle password change request
@@ -1957,11 +1976,10 @@ function addNotificationToDatabase(bookingId, message) {
   }
 }
 
-
 // Store temporary data for rating and review
 const tempData = {};
 
-app.post('/api/bookings/:bookingId/rating', async (req, res) => {
+app.post("/api/bookings/:bookingId/rating", async (req, res) => {
   const { bookingId } = req.params;
   const { rating } = req.body;
 
@@ -1976,11 +1994,11 @@ app.post('/api/bookings/:bookingId/rating', async (req, res) => {
     // Construct notification message and insert into notification table
     updateRatingAndReview(bookingId, rating, review, res);
   } else {
-    res.status(200).json({ message: 'Rating stored temporarily' });
+    res.status(200).json({ message: "Rating stored temporarily" });
   }
 });
 
-app.post('/api/bookings/:bookingId/review', async (req, res) => {
+app.post("/api/bookings/:bookingId/review", async (req, res) => {
   const { bookingId } = req.params;
   const { review } = req.body;
 
@@ -1995,28 +2013,33 @@ app.post('/api/bookings/:bookingId/review', async (req, res) => {
     // Construct notification message and insert into notification table
     updateRatingAndReview(bookingId, rating, review, res);
   } else {
-    res.status(200).json({ message: 'Review stored temporarily' });
+    res.status(200).json({ message: "Review stored temporarily" });
   }
 });
 
 // Function to update rating and review in the database and insert notification
 function updateRatingAndReview(bookingId, rating, review, res) {
-  const updateRatingSql = 'UPDATE bookings SET rating = ?, review = ? WHERE id = ?';
-  const getBookingSql = 'SELECT name FROM bookings WHERE id = ?';
+  const updateRatingSql =
+    "UPDATE bookings SET rating = ?, review = ? WHERE id = ?";
+  const getBookingSql = "SELECT name FROM bookings WHERE id = ?";
 
   // Update rating and review in the database
   pool.query(updateRatingSql, [rating, review, bookingId], (err, result) => {
     if (err) {
-      console.error('Error updating rating and review:', err);
-      res.status(500).json({ error: 'An error occurred while updating rating and review' });
+      console.error("Error updating rating and review:", err);
+      res
+        .status(500)
+        .json({ error: "An error occurred while updating rating and review" });
       return;
     }
 
     // Retrieve name from the bookings table
     pool.query(getBookingSql, [bookingId], (err, result) => {
       if (err) {
-        console.error('Error retrieving name:', err);
-        res.status(500).json({ error: 'An error occurred while retrieving name' });
+        console.error("Error retrieving name:", err);
+        res
+          .status(500)
+          .json({ error: "An error occurred while retrieving name" });
         return;
       }
 
@@ -2024,26 +2047,35 @@ function updateRatingAndReview(bookingId, rating, review, res) {
       const notificationMessage = `${name} rated ${rating} and reviewed "${review}"`;
 
       // Insert notification into the notification table
-      const insertNotificationSql = 'INSERT INTO notification (notify) VALUES (?)';
-      pool.query(insertNotificationSql, [notificationMessage], (err, result) => {
-        if (err) {
-          console.error('Error inserting notification:', err);
-          res.status(500).json({ error: 'An error occurred while inserting notification' });
-          return;
-        }
+      const insertNotificationSql =
+        "INSERT INTO notification (notify) VALUES (?)";
+      pool.query(
+        insertNotificationSql,
+        [notificationMessage],
+        (err, result) => {
+          if (err) {
+            console.error("Error inserting notification:", err);
+            res
+              .status(500)
+              .json({
+                error: "An error occurred while inserting notification",
+              });
+            return;
+          }
 
-        res.status(200).json({ message: 'Rating and review updated successfully' });
-      });
+          res
+            .status(200)
+            .json({ message: "Rating and review updated successfully" });
+        }
+      );
     });
   });
 }
 
-
 app.get("/api/notifications", (req, res) => {
-
-  const sql = "SELECT id, is_read, timestamp, notify FROM notification ORDER BY id DESC";
+  const sql =
+    "SELECT id, is_read, timestamp, notify FROM notification ORDER BY id DESC";
   pool.query(sql, (err, result) => {
-
     if (err) {
       console.log("error fetching notifications");
       return;
@@ -2064,7 +2096,9 @@ app.post("/api/mark-all-as-read", (req, res) => {
       return;
     }
     console.log("All notifications marked as read successfully");
-    res.status(200).json({ message: "All notifications marked as read successfully" });
+    res
+      .status(200)
+      .json({ message: "All notifications marked as read successfully" });
   });
 });
 
@@ -2078,92 +2112,118 @@ app.post("/api/mark-as-read/:id", (req, res) => {
       return;
     }
     console.log(`Notification ${id} marked as read successfully`);
-    res.status(200).json({ message: `Notification ${id} marked as read successfully` });
+    res
+      .status(200)
+      .json({ message: `Notification ${id} marked as read successfully` });
   });
 });
 
 // API endpoint to handle insertion of selected services into the database
-app.post('/api/addServices', (req, res) => {
+app.post("/api/addServices", (req, res) => {
   const services = req.body.services;
 
   // Check if services data is provided
   if (!services || !Array.isArray(services) || services.length === 0) {
-    return res.status(400).json({ error: 'No services provided' });
+    return res.status(400).json({ error: "No services provided" });
   }
 
   // Construct SQL query to insert services into the database
-  const sql = 'INSERT INTO services (label) VALUES ?';
+  const sql = "INSERT INTO services (label) VALUES ?";
 
   // Extract service names from the services array
-  const values = services.map(service => [service.label]);
+  const values = services.map((service) => [service.label]);
 
   // Execute the SQL query
   pool.query(sql, [values], (err, result) => {
     if (err) {
-      console.error('Error inserting services:', err);
-      return res.status(500).json({ error: 'Failed to insert services' });
+      console.error("Error inserting services:", err);
+      return res.status(500).json({ error: "Failed to insert services" });
     }
-    console.log('Services inserted successfully');
-    res.json({ message: 'Services inserted successfully' });
+    console.log("Services inserted successfully");
+    res.json({ message: "Services inserted successfully" });
   });
 });
 
 // API endpoint to handle insertion of custom service into the database
-app.post('/api/addCustomService', (req, res) => {
+app.post("/api/addCustomService", (req, res) => {
   const serviceName = req.body.name;
 
   // Check if service name is provided
   if (!serviceName) {
-    return res.status(400).json({ error: 'No service name provided' });
+    return res.status(400).json({ error: "No service name provided" });
   }
 
   // Construct SQL query to insert custom service into the database
-  const sql = 'INSERT INTO services (label) VALUES (?)';
+  const sql = "INSERT INTO services (label) VALUES (?)";
 
   // Execute the SQL query
   pool.query(sql, [serviceName], (err, result) => {
     if (err) {
-      console.error('Error inserting custom service:', err);
-      return res.status(500).json({ error: 'Failed to insert custom service' });
+      console.error("Error inserting custom service:", err);
+      return res.status(500).json({ error: "Failed to insert custom service" });
     }
-    console.log('Custom service inserted successfully');
+    console.log("Custom service inserted successfully");
     // Respond with success message
-    res.json({ message: 'Custom service inserted successfully' });
+    res.json({ message: "Custom service inserted successfully" });
   });
 });
 
 // Route to fetch services
-app.get('/api/getServices', (req, res) => {
+app.get("/api/getServices", (req, res) => {
   // Prepare the SQL query
-  const sql = 'SELECT * FROM services';
+  const sql = "SELECT * FROM services";
 
   // Execute the SQL query
   pool.query(sql, (err, result) => {
     if (err) {
-      console.error('Error fetching services:', err);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error("Error fetching services:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
     res.json(result);
-    console.log("result",result)
+    console.log("result", result);
   });
 });
 
-
 // Route to delete a service by ID
-app.delete('/api/deleteService/:id', (req, res) => {
+app.delete("/api/deleteService/:id", (req, res) => {
   const serviceId = req.params.id;
 
   // Prepare the SQL query to delete the service by ID
-  const sql = 'DELETE FROM services WHERE id = ?';
+  const sql = "DELETE FROM services WHERE id = ?";
 
   // Execute the SQL query with the service ID as a parameter
   pool.query(sql, [serviceId], (err, result) => {
     if (err) {
-      console.error('Error deleting service:', err);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error("Error deleting service:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
     // If the service was deleted successfully, return success message
-    res.json({ message: 'Service deleted successfully' });
+    res.json({ message: "Service deleted successfully" });
+  });
+});
+
+// Backend code
+// API endpoint to handle updating service label in the database
+app.put("/api/updateService/:id", (req, res) => {
+  const { id } = req.params;
+  const { label } = req.body;
+
+  // Check if service ID and label are provided
+  if (!id || !label) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+
+  // Construct SQL query to update service label
+  const sql = "UPDATE services SET label = ? WHERE id = ?";
+
+  // Execute the SQL query
+  pool.query(sql, [label, id], (err, result) => {
+    if (err) {
+      console.error("Error updating service:", err);
+      return res.status(500).json({ error: "Failed to update service" });
+    }
+    console.log("Service updated successfully");
+    res.json({ message: "Service updated successfully" });
   });
 });
 
@@ -2185,23 +2245,155 @@ app.put("/api/updateThemeStatus", async (req, res) => {
   }
 });
 
+app.get("/api/getThemeStatus", async (req, res) => {
+  const sql = "SELECT theme from admin where id = 1";
 
-app.get("/api/getThemeStatus",async (req,res) =>{
-
-  const sql = "SELECT theme from admin where id = 1"
-  
-  pool.query( sql, (err, result) => {
-
-    if(err) {
-      console.log( "Error fetching theme status");
+  pool.query(sql, (err, result) => {
+    if (err) {
+      console.log("Error fetching theme status");
       res.status(500).send("Error fetching theme status");
       return;
     }
     // console.log("Theme status fetched successfully",result);
     res.send(result);
-  })
-})
+  });
+});
 
+app.get("/api/getRoomTypes", async (req, res) => {
+  const sql = "SELECT room_type FROM rooms ";
+  pool.query(sql, (err, result) => {
+    if (err) {
+      console.log("Error fetching Room types ");
+      res.status(500).send("Error fetching Room types");
+      return;
+    }
+    console.log("Room types fetched succeefully", result);
+    // Extract room types from the result array
+    const RoomTypes = result.map((row) => row.room_type);
+
+    console.log("Room types fetched successfully: ", RoomTypes);
+
+    // Send the room types array as the response
+    res.json(RoomTypes);
+  });
+});
+
+app.put('/api/updateRoomType/:id', (req, res) => {
+  const { id } = req.params;
+  const { occupancy, available, price, tax } = req.body;
+
+  // Check if occupancy, available, price, and tax are provided
+  if (!occupancy || !available || !price || !tax) {
+    return res.status(400).json({ error: 'Occupancy, available, price, and tax are required' });
+  }
+
+  // Construct SQL query to update the room type
+  const sql = 'UPDATE rooms SET no_of_rooms = ?, currently_available = ?, price = ?, tax = ? WHERE id = ?';
+
+  // Execute the SQL query
+  pool.query(sql, [occupancy, available, price, tax, id], (err, result) => {
+    if (err) {
+      console.error('Error updating room type:', err);
+      return res.status(500).json({ error: 'Failed to update room type' });
+    }
+    console.log('Room type updated successfully');
+    res.json({ message: 'Room type updated successfully' });
+  });
+});
+
+
+// Define a route to handle adding a new room type
+app.post('/api/addRoomType', (req, res) => {
+  const { newRoomType } = req.body;
+
+  // Check if newRoomType is provided
+  if (!newRoomType) {
+    return res.status(400).json({ error: 'New room type is required' });
+  }
+
+  // Construct SQL query to insert the new room type
+  const sql = 'INSERT INTO rooms (room_type) VALUES (?)';
+
+  // Execute the SQL query
+  pool.query(sql, [newRoomType], (err, result) => {
+    if (err) {
+      console.error('Error adding new room type:', err);
+      return res.status(500).json({ error: 'Failed to add new room type' });
+    }
+    console.log('New room type added successfully');
+    res.json({ message: 'New room type added successfully' });
+  });
+});
+
+// Saving expenses route
+app.post('/api/save-expenses', (req, res) => {
+  const { bookingId, expenses } = req.body;
+
+  // Check if bookingId and expenses are provided
+  if (!bookingId || !expenses) {
+    return res.status(400).json({ error: 'Booking ID and expenses are required' });
+  }
+
+  // Convert expenses array to JSON string
+  const formattedExpenses = JSON.stringify(expenses);
+
+  // Construct SQL query to update expenses for the specified bookingId
+  const sql = 'UPDATE bookings SET expenses = ? WHERE id = ?';
+
+  // Execute the SQL query
+  pool.query(sql, [formattedExpenses, bookingId], (err, result) => {
+    if (err) {
+      console.error('Error updating expenses:', err);
+      return res.status(500).json({ error: 'Failed to update expenses' });
+    }
+    console.log('Expenses updated successfully');
+    res.json({ message: 'Expenses updated successfully' });
+  });
+});
+// Retrieving expenses route
+// Retrieving expenses route
+app.get('/api/get-expenses/:bookingId', (req, res) => {
+  const { bookingId } = req.params;
+
+  // Construct SQL query to select expenses data for the given booking ID
+  const sql = 'SELECT expenses FROM bookings WHERE id = ?';
+
+  // Execute the SQL query
+  pool.query(sql, [bookingId], (err, result) => {
+    if (err) {
+      console.error('Error retrieving expenses:', err);
+      return res.status(500).json({ error: 'Failed to retrieve expenses data' });
+    }
+
+    // Check if expenses data exists for the given booking ID
+    if (result.length === 0 || !result[0].expenses) {
+      return res.status(404).json({ error: 'Expenses data not found for the given booking ID' });
+    }
+
+    // Parse and send expenses data as JSON
+    const expenses = JSON.parse(result[0].expenses);
+    res.json({ expenses });
+  });
+});
+
+
+app.get("/api/fetchBookingDetails/:bookingId", (req, res) => {
+  const bookingId = req.params.bookingId;
+  const query = "SELECT * FROM bookings WHERE id = ?"; // Replace 'bookings' with your actual table name
+  pool.query(query, [bookingId], (err, rows) => {
+    if (err) {
+      console.error("Error executing MySQL query:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (rows.length === 0) {
+      // If no booking found with the provided ID, return 404 Not Found
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    res.json(rows[0]); // Assuming there's only one booking with the provided ID
+  });
+});
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
