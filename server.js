@@ -618,14 +618,14 @@ app.get("/api/roomgallerycoverimages", (req, res) => {
   }
 });
 
-// Middleware to check authentication
-const requireAuth = (req, res, next) => {
-  if (req.session && req.session.user) {
-    return next();
-  } else {
-    res.redirect("Admin/Login");
-  }
-};
+// // Middleware to check authentication
+// const requireAuth = (req, res, next) => {
+//   if (req.session && req.session.user) {
+//     return next();
+//   } else {
+//     res.redirect("Admin/Login");
+//   }
+// };
 
 /* 
 const coverImageStorage = multer.diskStorage({
@@ -1906,6 +1906,21 @@ app.get("/api/totalbookings", (req, res) => {
   });
 });
 
+app.get("/api/totalpaidamount", (req, res) => {
+  const sql = "SELECT SUM(paid_amount) AS totalPaidAmount FROM bookings";
+  pool.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error fetching total paid amount:", err);
+      res.status(500).send("Error fetching total paid amount");
+      return;
+    }
+    
+    const totalPaidAmount = result[0].totalPaidAmount || 0; // Access totalPaidAmount from result
+    res.json({ totalPaidAmount });
+  });
+});
+
+
 app.get("/api/booking-status", (req, res) => {
   try {
     // Get today's date
@@ -2055,11 +2070,9 @@ function updateRatingAndReview(bookingId, rating, review, res) {
         (err, result) => {
           if (err) {
             console.error("Error inserting notification:", err);
-            res
-              .status(500)
-              .json({
-                error: "An error occurred while inserting notification",
-              });
+            res.status(500).json({
+              error: "An error occurred while inserting notification",
+            });
             return;
           }
 
@@ -2278,96 +2291,104 @@ app.get("/api/getRoomTypes", async (req, res) => {
   });
 });
 
-app.put('/api/updateRoomType/:id', (req, res) => {
+app.put("/api/updateRoomType/:id", (req, res) => {
   const { id } = req.params;
   const { occupancy, available, price, tax } = req.body;
 
   // Check if occupancy, available, price, and tax are provided
   if (!occupancy || !available || !price || !tax) {
-    return res.status(400).json({ error: 'Occupancy, available, price, and tax are required' });
+    return res
+      .status(400)
+      .json({ error: "Occupancy, available, price, and tax are required" });
   }
 
   // Construct SQL query to update the room type
-  const sql = 'UPDATE rooms SET no_of_rooms = ?, currently_available = ?, price = ?, tax = ? WHERE id = ?';
+  const sql =
+    "UPDATE rooms SET no_of_rooms = ?, currently_available = ?, price = ?, tax = ? WHERE id = ?";
 
   // Execute the SQL query
   pool.query(sql, [occupancy, available, price, tax, id], (err, result) => {
     if (err) {
-      console.error('Error updating room type:', err);
-      return res.status(500).json({ error: 'Failed to update room type' });
+      console.error("Error updating room type:", err);
+      return res.status(500).json({ error: "Failed to update room type" });
     }
-    console.log('Room type updated successfully');
-    res.json({ message: 'Room type updated successfully' });
+    console.log("Room type updated successfully");
+    res.json({ message: "Room type updated successfully" });
   });
 });
 
-
 // Define a route to handle adding a new room type
-app.post('/api/addRoomType', (req, res) => {
+app.post("/api/addRoomType", (req, res) => {
   const { newRoomType } = req.body;
 
   // Check if newRoomType is provided
   if (!newRoomType) {
-    return res.status(400).json({ error: 'New room type is required' });
+    return res.status(400).json({ error: "New room type is required" });
   }
 
   // Construct SQL query to insert the new room type
-  const sql = 'INSERT INTO rooms (room_type) VALUES (?)';
+  const sql = "INSERT INTO rooms (room_type) VALUES (?)";
 
   // Execute the SQL query
   pool.query(sql, [newRoomType], (err, result) => {
     if (err) {
-      console.error('Error adding new room type:', err);
-      return res.status(500).json({ error: 'Failed to add new room type' });
+      console.error("Error adding new room type:", err);
+      return res.status(500).json({ error: "Failed to add new room type" });
     }
-    console.log('New room type added successfully');
-    res.json({ message: 'New room type added successfully' });
+    console.log("New room type added successfully");
+    res.json({ message: "New room type added successfully" });
   });
 });
 
 // Saving expenses route
-app.post('/api/save-expenses', (req, res) => {
+app.post("/api/save-expenses", (req, res) => {
   const { bookingId, expenses } = req.body;
 
   // Check if bookingId and expenses are provided
   if (!bookingId || !expenses) {
-    return res.status(400).json({ error: 'Booking ID and expenses are required' });
+    return res
+      .status(400)
+      .json({ error: "Booking ID and expenses are required" });
   }
 
   // Convert expenses array to JSON string
   const formattedExpenses = JSON.stringify(expenses);
 
   // Construct SQL query to update expenses for the specified bookingId
-  const sql = 'UPDATE bookings SET expenses = ? WHERE id = ?';
+  const sql = "UPDATE bookings SET expenses = ? WHERE id = ?";
 
   // Execute the SQL query
   pool.query(sql, [formattedExpenses, bookingId], (err, result) => {
     if (err) {
-      console.error('Error updating expenses:', err);
-      return res.status(500).json({ error: 'Failed to update expenses' });
+      console.error("Error updating expenses:", err);
+      return res.status(500).json({ error: "Failed to update expenses" });
     }
-    console.log('Expenses updated successfully');
-    res.json({ message: 'Expenses updated successfully' });
+    console.log("Expenses updated successfully");
+    res.json({ message: "Expenses updated successfully" });
   });
 });
 // Retrieving expenses route
 // Retrieving expenses route
-app.get('/api/get-expenses/:bookingId', (req, res) => {
+app.get("/api/get-expenses/:bookingId", (req, res) => {
   const { bookingId } = req.params;
 
   // Construct SQL query to select expenses data for the given booking ID
-  const sql = 'SELECT expenses FROM bookings WHERE id = ?';
+  const sql = "SELECT expenses FROM bookings WHERE id = ?";
 
   // Execute the SQL query
   pool.query(sql, [bookingId], (err, result) => {
     if (err) {
-      console.error('Error retrieving expenses:', err);
-      return res.status(500).json({ error: 'Failed to retrieve expenses data' });
+      console.error("Error retrieving expenses:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve expenses data" });
     }
 
     // Check if expenses data exists for the given booking ID
     if (result.length === 0 || !result[0].expenses) {
-      return res.status(404).json({ error: 'Expenses data not found for the given booking ID' });
+      return res
+        .status(404)
+        .json({ error: "Expenses data not found for the given booking ID" });
     }
 
     // Parse and send expenses data as JSON
@@ -2375,7 +2396,6 @@ app.get('/api/get-expenses/:bookingId', (req, res) => {
     res.json({ expenses });
   });
 });
-
 
 app.get("/api/fetchBookingDetails/:bookingId", (req, res) => {
   const bookingId = req.params.bookingId;
@@ -2392,6 +2412,321 @@ app.get("/api/fetchBookingDetails/:bookingId", (req, res) => {
     }
 
     res.json(rows[0]); // Assuming there's only one booking with the provided ID
+  });
+});
+
+// Define storage for multer
+const serviceImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const destinationFolder = "./uploads/serviceimages";
+    fs.mkdirSync(destinationFolder, { recursive: true });
+    cb(null, destinationFolder);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now(); // Get current timestamp
+    const fileName = `${timestamp}_${file.originalname}`; // Append timestamp to filename
+    cb(null, fileName);
+  },
+});
+
+// Use multer with the defined storage for service images
+const serviceImageUpload = multer({ storage: serviceImageStorage });
+
+// Handle service image upload
+// Handle service image upload/update
+app.post(
+  "/uploadServiceImage",
+  serviceImageUpload.single("image"),
+  async (req, res) => {
+    try {
+      // Check if file is uploaded successfully
+      if (!req.file) {
+        return res.status(400).json({ error: "No image uploaded" });
+      }
+
+      const imageUrl = `/uploads/serviceimages/${req.file.filename}`;
+      const serviceId = req.query.serviceId; // Retrieve service ID from the query parameters
+
+      // Update service image URL in the database for the corresponding service ID
+      pool.query(
+        "UPDATE services SET picture = ? WHERE id = ?",
+        [imageUrl, serviceId],
+        (error, results) => {
+          if (error) {
+            console.error("Error updating service image:", error);
+            return res.status(500).json({
+              error: "Internal Server Error",
+              details: error.message,
+            });
+          }
+          // Check if the service was updated successfully
+          if (results.affectedRows === 0) {
+            return res.status(404).json({ error: "Service not found" });
+          }
+          console.log("Service image updated successfully:", imageUrl);
+          res.json({
+            success: true,
+            message: "Service image updated successfully",
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Error uploading service image:", error);
+      res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
+  }
+);
+
+// Handle updating service image
+app.put(
+  "/updateServiceImage/:serviceId",
+  serviceImageUpload.single("image"),
+  async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+      // Ensure that a file was uploaded
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file uploaded" });
+      }
+
+      // Construct the new relative image URL
+      const updatedImageUrl = `/uploads/serviceimages/${req.file.filename}`;
+
+      // Update the image URL in the database
+      pool.query(
+        "UPDATE services SET picture = ? WHERE id = ?",
+        [updatedImageUrl, serviceId],
+        (error, results) => {
+          if (error) {
+            console.error("Error updating service image:", error);
+            return res.status(500).json({
+              error: "Internal Server Error",
+              details: error.message,
+            });
+          }
+          res.status(200).json({
+            success: true,
+            message: "Service image updated successfully",
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Error updating service image:", error);
+      res
+        .status(500)
+        .json({ error: "Internal Server Error", details: error.message });
+    }
+  }
+);
+
+// API Route to delete service image
+app.delete("/api/deleteServiceImage", async (req, res) => {
+  try {
+    const { serviceId } = req.query;
+
+    // First, fetch the image URL from the database
+    pool.query(
+      "SELECT picture FROM services WHERE id = ?",
+      [serviceId],
+      async (error, results) => {
+        if (error) {
+          console.error("Error fetching service image URL:", error);
+          return res.status(500).json({
+            error: "Internal Server Error",
+            details: error.message,
+          });
+        }
+
+        const imageUrl = results[0]?.picture; // Use optional chaining to handle undefined or null
+
+        if (!imageUrl) {
+          console.error("Image URL not found for service ID:", serviceId);
+          return res.status(404).json({
+            error: "Image URL not found",
+            details: "No image URL found for the specified service ID",
+          });
+        }
+
+        // Delete the image URL from the database
+        pool.query(
+          "UPDATE services SET picture = NULL WHERE id = ?",
+          [serviceId],
+          (error, results) => {
+            if (error) {
+              console.error("Error deleting service image URL:", error);
+              return res.status(500).json({
+                error: "Internal Server Error",
+                details: error.message,
+              });
+            }
+
+            console.log("Service image URL deleted successfully");
+
+            const imagePath = path.join(__dirname, imageUrl);
+            console.log("imagePath", imagePath);
+
+            // Delete the corresponding image file from the file system
+            fs.unlink(imagePath, (error) => {
+              if (error) {
+                console.error("Error deleting image file:", error);
+                // Don't return an error response here since the URL has been removed from the database
+              } else {
+                console.log("Image file deleted successfully");
+              }
+            });
+
+            res.status(200).json({
+              success: true,
+              message: "Service image and file deleted successfully",
+            });
+          }
+        );
+      }
+    );
+  } catch (error) {
+    console.error("Error deleting service image:", error);
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+app.get("/api/getServiceImages", (req, res) => {
+  // Query to fetch images and ids from the database
+  const sql = "SELECT id, picture FROM services";
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching images from database:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+      return;
+    }
+
+    // Extract image URLs and ids from the results
+    const images = results.map((result) => ({
+      id: result.id,
+      picture: result.picture,
+    }));
+
+    console.log("Fetched images:", images); // Logging fetched images
+    res.json({ images });
+  });
+});
+
+// Define storage for multer
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const destinationFolder = "./uploads/sitelogo";
+    fs.mkdirSync(destinationFolder, { recursive: true });
+    cb(null, destinationFolder);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now(); // Get current timestamp
+    const fileName = `${timestamp}_${file.originalname}`; // Append timestamp to filename
+    cb(null, fileName);
+  },
+});
+
+// Use multer with the defined storage for service images
+const logoUpload = multer({ storage: logoStorage });
+
+// Handle service image upload/update
+app.post("/siteLogoUpload", logoUpload.single("image"), async (req, res) => {
+  try {
+    // Check if file is uploaded successfully
+    if (!req.file) {
+      return res.status(400).json({ error: "No image uploaded" });
+    }
+
+    // Retrieve the previous image URL from the database
+    pool.query(
+      "SELECT logo FROM admin WHERE id = 1",
+      (error, results) => {
+        if (error) {
+          console.error("Error retrieving previous image URL:", error);
+          return res.status(500).json({
+            error: "Internal Server Error",
+            details: error.message,
+          });
+        }
+        
+        // Check if a previous image URL exists
+        const previousImageUrl = results.length > 0 ? results[0].logo : null;
+
+        const imageUrl = `/uploads/sitelogo/${req.file.filename}`;
+
+        // Update service image URL in the database for the corresponding service ID
+        pool.query(
+          "UPDATE admin SET logo = ? WHERE id = 1",
+          [imageUrl],
+          (error, results) => {
+            if (error) {
+              console.error("Error updating service image:", error);
+              return res.status(500).json({
+                error: "Internal Server Error",
+                details: error.message,
+              });
+            }
+            // Check if the service was updated successfully
+            if (results.affectedRows === 0) {
+              return res.status(404).json({ error: "Service not found" });
+            }
+            console.log("Service image updated successfully:", imageUrl);
+            res.json({
+              success: true,
+              message: "Service image updated successfully",
+            });
+
+            // Delete the previous image file from the file system
+            if (previousImageUrl) {
+              const imagePath = path.join(__dirname, previousImageUrl);
+              console.log("Deleting previous image:", imagePath);
+              fs.unlink(imagePath, (error) => {
+                if (error) {
+                  console.error("Error deleting previous image file:", error);
+                } else {
+                  console.log("Previous image file deleted successfully");
+                }
+              });
+            }
+          }
+        );
+      }
+    );
+  } catch (error) {
+    console.error("Error uploading service image:", error);
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+});
+
+app.get("/api/fetchSiteLogo", (req, res) => {
+  // Query to fetch the logo URL from the database
+  const sql = "SELECT logo FROM admin WHERE id = 1"; // Assuming the logo is stored in the admin table with id 1
+
+  pool.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching logo from database:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+      return;
+    }
+
+    // Check if any results were returned
+    if (!results || results.length === 0 || !results[0].logo) {
+      console.log("No logo found in the database");
+      res.status(404).json({ error: "Logo not found" });
+      return;
+    }
+
+    // Extract the logo URL from the result
+    const logoUrl = results[0].logo;
+
+    console.log("Fetched logo URL:", logoUrl); // Logging fetched logo URL
+    res.json({ logo: logoUrl });
   });
 });
 
