@@ -11,7 +11,7 @@ const pool = mysql.createConnection({
   queueLimit: 0,
 });
 
-pool.connect((err) => {
+connection.connect((err) => {
   if (err) {
     console.error("Error connecting to MySQL database:", err);
     return;
@@ -19,4 +19,4 @@ pool.connect((err) => {
   console.log("Connected to MySQL database");
 });
 
-module.exports = pool;
+module.exports = connection;
