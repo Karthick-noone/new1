@@ -37,10 +37,10 @@ app.use(preventDirectAccessToApi);
 app.use(cors());
 
 const pool = mysql.createConnection({
-  host: "fdb1032.awardspace.net",
-  user: "4493309_karthick",
-  password: "S%jY/Bi_6@YCeFBa",
-  database: "4493309_karthick",
+  host: "sql12.freesqldatabase.com",
+  user: "sql12712633",
+  password: "CiyKpTfbS6",
+  database: "sql12712633",
 });
 pool.connect((err) => {
   if (err) {
