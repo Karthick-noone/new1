@@ -51,15 +51,15 @@ app.use(cors());
 // });
 
 // Establish database connection
-// connection.getConnection((err, connection) => {
-//   if (err) {
-//     console.error('Failed to connect to the database:', err);
-//   } else {
-//     console.log('Connected to the database');
-//     // Release the connection
-//     connection.release();
-//   }
-// });
+connection.getConnection((err, connection) => {
+  if (err) {
+    console.error('Failed to connect to the database:', err);
+  } else {
+    console.log('Connected to the database');
+    // Release the connection
+    connection.release();
+  }
+});
 
 // Middleware to log requests
 // app.use((req, res, next) => {
