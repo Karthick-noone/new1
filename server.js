@@ -42,24 +42,24 @@ app.use(cors());
 //   password: "",
 //   database: "fabro",
 // });
-// connection.connect((err) => {
-//   if (err) {
-//     console.error("Error connecting to MySQL database:", err);
-//     return;
-//   }
-//   console.log("Connected to MySQL database");
-// });
-
-// Establish database connection
-connection.getConnection((err, connection) => {
+connection.connect((err) => {
   if (err) {
-    console.error('Failed to connect to the database:', err);
-  } else {
-    console.log('Connected to the database');
-    // Release the connection
-    connection.release();
+    console.error("Error connecting to MySQL database:", err);
+    return;
   }
+  console.log("Connected to MySQL database");
 });
+
+// // Establish database connection
+// connection.getConnection((err, connection) => {
+//   if (err) {
+//     console.error('Failed to connect to the database:', err);
+//   } else {
+//     console.log('Connected to the database');
+//     // Release the connection
+//     connection.release();
+//   }
+// });
 
 // Middleware to log requests
 // app.use((req, res, next) => {
