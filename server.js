@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const pool = require("./db.js"); // Import the common database connection
+// const pool = require("./db.js"); // Import the common database connection
 const app = express();
 // const { DateTime } = require("luxon");
 const axios = require("axios");
@@ -36,12 +36,12 @@ app.use(preventDirectAccessToApi);
 
 app.use(cors());
 
-// const pool = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   password: "",
-//   database: "fabro",
-// });
+const pool = mysql.createConnection({
+  host: "fdb1032.awardspace.net",
+  user: "4493309_karthick",
+  password: "S%jY/Bi_6@YCeFBa",
+  database: "4493309_karthick",
+});
 pool.connect((err) => {
   if (err) {
     console.error("Error connecting to MySQL database:", err);
