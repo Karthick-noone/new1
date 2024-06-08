@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const pool = require("./db.js"); // Import the common database connection
+const connection = require("./db.js"); // Import the common database connection
 const app = express();
 // const { DateTime } = require("luxon");
 const axios = require("axios");
@@ -36,13 +36,13 @@ app.use(preventDirectAccessToApi);
 
 app.use(cors());
 
-// const pool = mysql.createConnection({
+// const connection = mysql.createConnection({
 //   host: "localhost",
 //   user: "root",
 //   password: "",
 //   database: "fabro",
 // });
-// pool.connect((err) => {
+// connection.connect((err) => {
 //   if (err) {
 //     console.error("Error connecting to MySQL database:", err);
 //     return;
@@ -51,7 +51,7 @@ app.use(cors());
 // });
 
 // Establish database connection
-// pool.getConnection((err, connection) => {
+// connection.getConnection((err, connection) => {
 //   if (err) {
 //     console.error('Failed to connect to the database:', err);
 //   } else {
@@ -78,7 +78,7 @@ const fast2sms = require("fast-two-sms");
 // Fetch admin name from the database
 app.get("/api/adminName", (req, res) => {
   const query = "SELECT username FROM admin LIMIT 1";
-  pool.query(query, (error, results) => {
+  connection.query(query, (error, results) => {
     if (error) {
       console.error("Failed to fetch admin name:", error);
       return res.status(500).json({ error: "Failed to fetch admin name" });
@@ -94,7 +94,7 @@ app.post("/cancelbooking", async (req, res) => {
     const { bookingId, cancellation } = req.body;
 
     // Insert a new record into the 'cancellations' table
-    const result = pool.query(
+    const result = connection.query(
       "INSERT INTO cancellations (booking_id, cancellation) VALUES (?, ?)",
       [bookingId, cancellation]
     );
@@ -128,7 +128,7 @@ app.post("/sendotp", async (req, res) => {
     const { number } = req.body;
 
     // Check if the provided mobile number exists in the 'bookings' table
-    pool.query(
+    connection.query(
       "SELECT * FROM bookings WHERE number = ?",
       [number],
       async (error, results) => {
@@ -152,7 +152,7 @@ app.post("/sendotp", async (req, res) => {
         const otp = generateOTP();
 
         // Store OTP in the database
-        pool.query("UPDATE bookings SET otp = ? WHERE number = ?", [
+        connection.query("UPDATE bookings SET otp = ? WHERE number = ?", [
           otp,
           number,
         ]);
@@ -182,7 +182,7 @@ app.post("/verifyotp", async (req, res) => {
     const { number, otp } = req.body;
 
     // Retrieve all matching rows from the database in descending order of timestamp
-    pool.query(
+    connection.query(
       "SELECT * FROM bookings WHERE number = ? ORDER BY id DESC",
       [number],
       async (error, matchingBookings) => {
@@ -227,7 +227,7 @@ app.put("/api/updateStatus", async (req, res) => {
     const { isActive, roomId } = req.body;
 
     // Update the status of rooms in the database
-    pool.query("UPDATE rooms SET status = ? WHERE id = ?", [isActive, roomId]);
+    connection.query("UPDATE rooms SET status = ? WHERE id = ?", [isActive, roomId]);
 
     // Send a success response to the client
     res.status(200).json({ message: "Status updated successfully" });
@@ -241,7 +241,7 @@ app.put("/api/updateStatus", async (req, res) => {
 // Fetch the status of the switch for all room types
 app.get("/api/getStatuss", (req, res) => {
   // Execute the query
-  pool.query("SELECT room_type, status FROM rooms", (error, results) => {
+  connection.query("SELECT room_type, status FROM rooms", (error, results) => {
     if (error) {
       console.error("Failed to fetch status:", error);
       return res.status(500).json({ error: "Failed to fetch status" });
@@ -276,7 +276,7 @@ app.get("/api/getStatus/:roomId", (req, res) => {
   const query = "SELECT status FROM rooms WHERE id = ?";
 
   // Execute the query with the room ID as a parameter
-  pool.query(query, [roomId], (error, results) => {
+  connection.query(query, [roomId], (error, results) => {
     if (error) {
       // Log the error and send an error response to the client
       console.error("Failed to fetch status:", error);
@@ -309,7 +309,7 @@ app.get("/roomdetails/:number", async (req, res) => {
     const { number } = req.params;
 
     // Fetch room details associated with the verified number from the database
-    const [roomDetails] = pool.query(
+    const [roomDetails] = connection.query(
       "SELECT * FROM bookings WHERE number = ?",
       [number]
     );
@@ -428,7 +428,7 @@ app.post(
       const roomType = req.body.roomType; // Retrieve room type from the request body
 
       // Insert imageUrl and roomType into the database
-      pool.query(
+      connection.query(
         "INSERT INTO roomgallerycoverimages (image_url, room_type) VALUES (?, ?)",
         [imageUrl, roomType],
         (error, result) => {
@@ -472,7 +472,7 @@ app.put(
       // Update the image URL in the database
       const query =
         "UPDATE roomgallerycoverimages SET image_url = ? WHERE image_url = ?";
-      pool.query(
+      connection.query(
         query,
         [updatedImageUrl, `/uploads/coverimages/${imageName}`],
         async (error, result) => {
@@ -532,7 +532,7 @@ app.delete("/api/deleteCoverImage", async (req, res) => {
     console.log("Received request to delete cover image:", imageUrl);
 
     // Delete the image from the database
-    pool.query(
+    connection.query(
       "DELETE FROM roomgallerycoverimages WHERE image_url = ?",
       [imageUrl],
       async (error, result) => {
@@ -588,7 +588,7 @@ app.delete("/api/deleteCoverImage", async (req, res) => {
 app.get("/api/roomgallerycoverimages", (req, res) => {
   try {
     // Fetch cover images from the database
-    pool.query(
+    connection.query(
       "SELECT * FROM roomgallerycoverimages",
       (error, results, fields) => {
         if (error) {
@@ -672,7 +672,7 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     const imageUrl = `/uploads/${roomType}/${req.file.filename}`;
 
     // Insert imageUrl into the corresponding database table based on room type
-    pool.query(
+    connection.query(
       `INSERT INTO ${roomType.toLowerCase()}images (image_url) VALUES (?)`,
       [imageUrl],
       (error, result) => {
@@ -706,7 +706,7 @@ app.get("/api/roomimages", (req, res) => {
     const query = `SELECT image_url FROM ${sanitizedRoomType}roomimages`;
 
     // Execute the query
-    pool.query(query, (error, results) => {
+    connection.query(query, (error, results) => {
       if (error) {
         console.error(
           `Error fetching ${req.query.roomType} room images:`,
@@ -755,7 +755,7 @@ app.put(
 
           // Update the image URL in the database
           const query = `UPDATE ${roomType.toLowerCase()}images SET image_url = ? WHERE image_url = ?`;
-          pool.query(
+          connection.query(
             query,
             [updatedImageUrl, `/uploads/${roomType}/${imageName}`],
             async (error, result) => {
@@ -834,7 +834,7 @@ app.delete("/api/deleteImage", async (req, res) => {
     const tableName = `${roomType.toLowerCase()}roomimages`;
 
     // Delete the image from the database
-    pool.query(
+    connection.query(
       `DELETE FROM ${tableName} WHERE image_url = ?`,
       [imageUrl],
       (error, result) => {
@@ -909,7 +909,7 @@ app.post(
       const imageUrl = `/uploads/homepage/${req.file.filename}`;
 
       // Insert imageUrl into the homepage database table
-      const [result, fields] = pool.query(
+      const [result, fields] = connection.query(
         "INSERT INTO homepageimages (image_url) VALUES (?)",
         [imageUrl]
       );
@@ -931,7 +931,7 @@ app.post(
 app.get("/api/homepageimages", async (req, res) => {
   try {
     const query = "SELECT image_url FROM homepageimages";
-    const [rows, fields] = pool.query(query);
+    const [rows, fields] = connection.query(query);
     const imageUrls = rows.map((row) => row.image_url);
     res.json(imageUrls);
   } catch (error) {
@@ -961,7 +961,7 @@ app.post("/logout", (req, res) => {
 
 // Handle room counts request
 app.get("/api/roomCounts", (req, res) => {
-  pool.query(
+  connection.query(
     "SELECT SUM(no_of_rooms) AS totalRooms FROM rooms",
     (error, results) => {
       if (error) {
@@ -977,12 +977,12 @@ app.get("/api/roomCounts", (req, res) => {
 
 // Import necessary modules and set up your server
 
-// Assuming you have pool initialized for your database connection
+// Assuming you have connection initialized for your database connection
 
 app.get("/api/roomLimits", (req, res) => {
   try {
     // Execute the query to fetch room limits
-    pool.query("SELECT id, no_of_rooms FROM rooms", (error, results) => {
+    connection.query("SELECT id, no_of_rooms FROM rooms", (error, results) => {
       if (error) {
         console.error("Error fetching room limits:", error);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -1006,7 +1006,7 @@ app.get("/api/roomLimits", (req, res) => {
 // Function to get room details from the database
 // const getRoomDetails = async (roomType) => {
 //   const query = "SELECT currently_available, length_of_stay, last_updated FROM rooms WHERE room_type = ?";
-//   const [results] = pool.query(query, [roomType]);
+//   const [results] = connection.query(query, [roomType]);
 //   return results[0];
 // };
 
@@ -1019,7 +1019,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
     }
 
     // Start transaction
-    pool.query("START TRANSACTION");
+    connection.query("START TRANSACTION");
 
     // Update cancellation status in bookings table
     const cancelQuery = `
@@ -1027,7 +1027,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
       SET cancellation = 'cancelled'
       WHERE id = ?;
     `;
-    pool.query(cancelQuery, [bookingId]);
+    connection.query(cancelQuery, [bookingId]);
 
     // Fetch booking details before cancellation
     const getBookingDetailsQuery = `
@@ -1035,7 +1035,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
       FROM bookings
       WHERE id = ?;
     `;
-    pool.query(getBookingDetailsQuery, [bookingId], (err, result) => {
+    connection.query(getBookingDetailsQuery, [bookingId], (err, result) => {
       if (err) {
         console.error("Error fetching booking details:", err);
         res.status(500).json({
@@ -1056,7 +1056,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
         INSERT INTO notification (notify)
         VALUES (?);
       `;
-      pool.query(
+      connection.query(
         insertNotificationQuery,
         [notificationMessage],
         (err, result) => {
@@ -1070,7 +1070,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
           }
 
           // Commit transaction
-          pool.query("COMMIT");
+          connection.query("COMMIT");
 
           console.log("Booking cancelled successfully");
           res.status(200).json({ message: "Booking cancelled successfully" });
@@ -1079,7 +1079,7 @@ app.put("/api/cancel/:bookingId/cancel", async (req, res) => {
     });
   } catch (error) {
     // Rollback transaction on error
-    pool.query("ROLLBACK");
+    connection.query("ROLLBACK");
 
     console.error("Error cancelling booking:", error.message);
     res.status(500).json({
@@ -1094,7 +1094,7 @@ app.get("/api/cancelledRoomCounts", (req, res) => {
     SELECT COUNT(*) AS cancelledRoomCounts FROM bookings WHERE cancellation = 'cancelled';
   `;
 
-  pool.query(cancelledRoomCountsQuery, (error, results) => {
+  connection.query(cancelledRoomCountsQuery, (error, results) => {
     if (error) {
       console.error("Error fetching cancelled room counts:", error.message);
       return res.status(500).json({
@@ -1115,7 +1115,7 @@ app.get("/api/cancelledRoomDetails", (req, res) => {
     ORDER BY id DESC;
   `;
 
-  pool.query(cancelledRoomDetailsQuery, (error, results) => {
+  connection.query(cancelledRoomDetailsQuery, (error, results) => {
     if (error) {
       console.error("Error fetching cancelled room details:", error.message);
       return res.status(500).json({
@@ -1133,7 +1133,7 @@ app.get("/api/booking/:id/cancellationStatus", (req, res) => {
   const bookingId = req.params.id;
 
   const query = "SELECT cancellation FROM bookings WHERE id = ?";
-  pool.query(query, [bookingId], (error, results) => {
+  connection.query(query, [bookingId], (error, results) => {
     if (error) {
       console.error("Error fetching cancellation status:", error);
       return res.status(500).json({
@@ -1158,7 +1158,7 @@ app.get("/api/booking/:id/cancellationStatus", (req, res) => {
 
 //   try {
 //     // Query the database to get the cancellation status for the specified booking ID
-//     const queryResult = await pool.query('SELECT cancellation FROM bookings WHERE number = ?', [bookingId]);
+//     const queryResult = await connection.query('SELECT cancellation FROM bookings WHERE number = ?', [bookingId]);
 
 //     // Check if rows were returned
 //     if (!queryResult.rows || queryResult.rows.length === 0) {
@@ -1178,7 +1178,7 @@ app.get("/api/booking/:id/cancellationStatus", (req, res) => {
 const addNotification = async (message) => {
   try {
     // Add a new notification to the database
-    await pool.query("INSERT INTO notification (notify) VALUES (?)", [message]);
+    await connection.query("INSERT INTO notification (notify) VALUES (?)", [message]);
     console.log("Notification added successfully.");
   } catch (error) {
     console.error("Error adding notification:", error);
@@ -1212,7 +1212,7 @@ app.post("/api/bookings", async (req, res) => {
       );
     }
 
-    pool.query("START TRANSACTION");
+    connection.query("START TRANSACTION");
 
     const insertQuery = `
       INSERT INTO bookings
@@ -1243,7 +1243,7 @@ app.post("/api/bookings", async (req, res) => {
     );
     const roomTypeValues = roomTypeArray.join(", ");
 
-    await pool.query(insertQuery, [
+    await connection.query(insertQuery, [
       orderId,
       name,
       number,
@@ -1265,7 +1265,7 @@ app.post("/api/bookings", async (req, res) => {
       currentTimestamp,
     ]);
 
-    pool.query("COMMIT");
+    connection.query("COMMIT");
 
     // Add a notification for the new booking
     const notificationMessage = `New booking made by ${name} for ${
@@ -1277,7 +1277,7 @@ app.post("/api/bookings", async (req, res) => {
 
     res.status(200).json({ message: "Booking submitted successfully" });
   } catch (error) {
-    pool.query("ROLLBACK");
+    connection.query("ROLLBACK");
 
     console.error("Error submitting booking:", error.message);
     res.status(500).json({
@@ -1315,7 +1315,7 @@ app.post("/api/booking", async (req, res) => {
       );
     }
 
-    pool.query("START TRANSACTION");
+    connection.query("START TRANSACTION");
 
     function generateOrderId() {
       const prefix = "ORD"; // Static prefix for order ID
@@ -1342,7 +1342,7 @@ app.post("/api/booking", async (req, res) => {
 
     const bookingDate = new Date().toDateString(); // Format: Sun Jan 07 2024
 
-    pool.query(insertQuery, [
+    connection.query(insertQuery, [
       orderId,
       name,
       number,
@@ -1362,12 +1362,12 @@ app.post("/api/booking", async (req, res) => {
       bookingDate,
     ]);
 
-    pool.query("COMMIT");
+    connection.query("COMMIT");
 
     console.log("Booking submitted successfully");
     res.status(200).json({ message: "Booking successful" });
   } catch (error) {
-    pool.query("ROLLBACK");
+    connection.query("ROLLBACK");
 
     console.error("Error submitting booking:", error.message);
     res.status(500).json({
@@ -1387,10 +1387,10 @@ app.post("/api/booking", async (req, res) => {
 //     }
 
 //     console.log("Starting transaction...");
-//     await pool.query("START TRANSACTION");
+//     await connection.query("START TRANSACTION");
 
 //     // Fetch room details to update room availability
-//     const [bookingDetails] = await pool.query(
+//     const [bookingDetails] = await connection.query(
 //       "SELECT * FROM bookings WHERE id = ?",
 //       [bookingId]
 //     );
@@ -1415,22 +1415,22 @@ app.post("/api/booking", async (req, res) => {
 
 //     for (const [roomType, roomCount] of roomTypeValuesArray) {
 //       console.log("Updating room:", roomType, roomCount);
-//       await pool.query(updateRoomsQuery, [roomCount, roomCount, roomType]);
+//       await connection.query(updateRoomsQuery, [roomCount, roomCount, roomType]);
 //     }
 
 //     console.log("Deleting booking...");
 //     // Delete the booking from the database
-//     await pool.query("DELETE FROM bookings WHERE id = ?", [bookingId]);
+//     await connection.query("DELETE FROM bookings WHERE id = ?", [bookingId]);
 
 //     console.log("Committing transaction...");
-//     await pool.query("COMMIT");
+//     await connection.query("COMMIT");
 
 //     console.log("Booking deleted successfully");
 //     res.status(200).json({ message: "Booking deleted successfully" });
 //   } catch (error) {
 //     console.error("Error deleting booking:", error.message);
 //     console.log("Rolling back transaction...");
-//     await pool.query("ROLLBACK");
+//     await connection.query("ROLLBACK");
 
 //     res.status(500).json({
 //       error: "Internal Server Error",
@@ -1443,7 +1443,7 @@ app.delete("/api/bookings/:bookingId", (req, res) => {
   const bookingId = req.params.bookingId;
 
   const sql = "DELETE FROM bookings WHERE id = ?";
-  pool.query(sql, [bookingId], (err, result) => {
+  connection.query(sql, [bookingId], (err, result) => {
     if (err) {
       console.error("Error deleting booking details");
       res.status(500).send("Error deleting booking details");
@@ -1465,7 +1465,7 @@ app.put("/api/bookings/:bookingId/payment", async (req, res) => {
       );
     }
 
-    pool.query("START TRANSACTION");
+    connection.query("START TRANSACTION");
 
     const updateQuery = `
       UPDATE bookings
@@ -1473,14 +1473,14 @@ app.put("/api/bookings/:bookingId/payment", async (req, res) => {
       WHERE id = ?
     `;
 
-    pool.query(updateQuery, [paymentStatus, bookingId]);
+    connection.query(updateQuery, [paymentStatus, bookingId]);
 
-    pool.query("COMMIT");
+    connection.query("COMMIT");
 
     console.log("Payment status updated successfully");
     res.status(200).json({ message: "Payment status updated successfully" });
   } catch (error) {
-    pool.query("ROLLBACK");
+    connection.query("ROLLBACK");
 
     console.error("Error updating payment status:", error.message);
     res.status(500).json({
@@ -1494,7 +1494,7 @@ app.get("/api/pendingCounts", async (req, res) => {
   try {
     const query =
       "SELECT COUNT(*) AS pendingCounts FROM bookings WHERE payment_status = ?";
-    pool.query(query, ["pending"], (err, result) => {
+    connection.query(query, ["pending"], (err, result) => {
       if (err) {
         console.error("Error executing MySQL query:", err);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -1516,7 +1516,7 @@ app.get("/api/bookings/:bookingId", async (req, res) => {
   try {
     if (bookingId === "lastEnteredId") {
       // Fetch the last entered booking ID
-      pool.query(
+      connection.query(
         "SELECT id FROM bookings ORDER BY id DESC LIMIT 1",
         (error, results) => {
           if (error) {
@@ -1536,7 +1536,7 @@ app.get("/api/bookings/:bookingId", async (req, res) => {
       // Fetch booking details for the provided booking ID
       console.log("Fetching booking details for ID:", bookingId);
 
-      pool.query(
+      connection.query(
         "SELECT * FROM bookings WHERE id = ?",
         [bookingId],
         (error, results) => {
@@ -1577,7 +1577,7 @@ app.post("/api/login", async (req, res) => {
 
     const sql =
       "SELECT * FROM admin WHERE BINARY username = ? AND BINARY password = ?";
-    pool.query(sql, [username, password], (error, results) => {
+    connection.query(sql, [username, password], (error, results) => {
       if (error) {
         console.error("Error during login:", error);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -1597,7 +1597,7 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/bookingDetails", (req, res) => {
   const query = "SELECT * FROM bookings ORDER BY id DESC"; // Replace 'bookings' with your actual table name
-  pool.query(query, (err, rows) => {
+  connection.query(query, (err, rows) => {
     if (err) {
       console.error("Error executing MySQL query:", err);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -1617,7 +1617,7 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
       throw new Error("Invalid or missing booking ID in the request.");
     }
 
-    pool.query("START TRANSACTION");
+    connection.query("START TRANSACTION");
 
     const updateQuery = `
       UPDATE bookings
@@ -1639,7 +1639,7 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
       WHERE id = ?
     `;
 
-    pool.query(updateQuery, [
+    connection.query(updateQuery, [
       updatedBooking.name,
       updatedBooking.number,
       updatedBooking.room_type,
@@ -1657,13 +1657,13 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
       bookingId,
     ]);
 
-    pool.query("COMMIT");
+    connection.query("COMMIT");
 
     console.log("Booking updated successfully");
     console.log("Booking updated successfully", updatedBooking);
     res.status(200).json({ message: "Booking updated successfully" });
   } catch (error) {
-    pool.query("ROLLBACK");
+    connection.query("ROLLBACK");
 
     console.error("Error updating booking:", error.message);
     res.status(500).json({
@@ -1719,7 +1719,7 @@ app.put("/api/bookings/:bookingId", async (req, res) => {
 //     `;
 
 //     // Execute the query with the formatted dates as parameters
-//     pool.query(
+//     connection.query(
 //       dateRangeQuery,
 //       [formattedCheckInDate, formattedCheckOutDate],
 //       (err, result) => {
@@ -1787,7 +1787,7 @@ app.post("/api/available-rooms", (req, res) => {
     `;
 
     // Execute the query with the formatted dates as parameters
-    pool.query(
+    connection.query(
       dateRangeQuery,
       [formattedCheckInDate, formattedCheckOutDate],
       (err, result) => {
@@ -1827,7 +1827,7 @@ app.post("/api/change-password", async (req, res) => {
 
   try {
     // Check if old password is correct
-    pool.query(
+    connection.query(
       "SELECT * FROM admin WHERE password = ?",
       [oldPassword],
       async (error, rows) => {
@@ -1840,7 +1840,7 @@ app.post("/api/change-password", async (req, res) => {
           if (newPassword !== oldPassword) {
             if (confirmPassword === newPassword) {
               // Update password in the database
-              pool.query(
+              connection.query(
                 "UPDATE admin SET password = ? WHERE password = ?",
                 [newPassword, oldPassword],
                 (error, result) => {
@@ -1894,7 +1894,7 @@ app.post("/api/change-password", async (req, res) => {
 
 app.get("/api/totalbookings", (req, res) => {
   const sql = "SELECT COUNT(*) as TOTALBOOKINGS FROM bookings ";
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching total bookings");
       res.status(500).send("Error fetching total bookings");
@@ -1908,7 +1908,7 @@ app.get("/api/totalbookings", (req, res) => {
 
 app.get("/api/totalpaidamount", (req, res) => {
   const sql = "SELECT SUM(paid_amount) AS totalPaidAmount FROM bookings";
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching total paid amount:", err);
       res.status(500).send("Error fetching total paid amount");
@@ -1936,7 +1936,7 @@ app.get("/api/booking-status", (req, res) => {
     `;
 
     // Execute the query to fetch booking dates
-    pool.query(bookingDatesQuery, (err, result) => {
+    connection.query(bookingDatesQuery, (err, result) => {
       if (err) {
         console.error("Error executing MySQL query:", err);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -1980,7 +1980,7 @@ function addNotificationToDatabase(bookingId, message) {
       INSERT INTO notification (booking_id, notify, is_read)
       VALUES (?, ?, FALSE);
     `;
-    pool.query(addNotificationQuery, [bookingId, message], (err, result) => {
+    connection.query(addNotificationQuery, [bookingId, message], (err, result) => {
       if (err) {
         console.error("Error adding notification to database:", err);
       }
@@ -2039,7 +2039,7 @@ function updateRatingAndReview(bookingId, rating, review, res) {
   const getBookingSql = "SELECT name FROM bookings WHERE id = ?";
 
   // Update rating and review in the database
-  pool.query(updateRatingSql, [rating, review, bookingId], (err, result) => {
+  connection.query(updateRatingSql, [rating, review, bookingId], (err, result) => {
     if (err) {
       console.error("Error updating rating and review:", err);
       res
@@ -2049,7 +2049,7 @@ function updateRatingAndReview(bookingId, rating, review, res) {
     }
 
     // Retrieve name from the bookings table
-    pool.query(getBookingSql, [bookingId], (err, result) => {
+    connection.query(getBookingSql, [bookingId], (err, result) => {
       if (err) {
         console.error("Error retrieving name:", err);
         res
@@ -2064,7 +2064,7 @@ function updateRatingAndReview(bookingId, rating, review, res) {
       // Insert notification into the notification table
       const insertNotificationSql =
         "INSERT INTO notification (notify) VALUES (?)";
-      pool.query(
+      connection.query(
         insertNotificationSql,
         [notificationMessage],
         (err, result) => {
@@ -2088,7 +2088,7 @@ function updateRatingAndReview(bookingId, rating, review, res) {
 app.get("/api/notifications", (req, res) => {
   const sql =
     "SELECT id, is_read, timestamp, notify FROM notification ORDER BY id DESC";
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.log("error fetching notifications");
       return;
@@ -2102,7 +2102,7 @@ app.get("/api/notifications", (req, res) => {
 
 app.post("/api/mark-all-as-read", (req, res) => {
   const sql = "UPDATE notification SET `is_read` = true";
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error marking all notifications as read:", err);
       res.status(500).json({ error: "Internal Server Error" });
@@ -2118,7 +2118,7 @@ app.post("/api/mark-all-as-read", (req, res) => {
 app.post("/api/mark-as-read/:id", (req, res) => {
   const { id } = req.params;
   const sql = "UPDATE notification SET `is_read` = true WHERE id = ?";
-  pool.query(sql, [id], (err, result) => {
+  connection.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Error marking notification as read:", err);
       res.status(500).json({ error: "Internal Server Error" });
@@ -2147,7 +2147,7 @@ app.post("/api/addServices", (req, res) => {
   const values = services.map((service) => [service.label]);
 
   // Execute the SQL query
-  pool.query(sql, [values], (err, result) => {
+  connection.query(sql, [values], (err, result) => {
     if (err) {
       console.error("Error inserting services:", err);
       return res.status(500).json({ error: "Failed to insert services" });
@@ -2170,7 +2170,7 @@ app.post("/api/addCustomService", (req, res) => {
   const sql = "INSERT INTO services (label) VALUES (?)";
 
   // Execute the SQL query
-  pool.query(sql, [serviceName], (err, result) => {
+  connection.query(sql, [serviceName], (err, result) => {
     if (err) {
       console.error("Error inserting custom service:", err);
       return res.status(500).json({ error: "Failed to insert custom service" });
@@ -2187,7 +2187,7 @@ app.get("/api/getServices", (req, res) => {
   const sql = "SELECT * FROM services";
 
   // Execute the SQL query
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching services:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -2205,7 +2205,7 @@ app.delete("/api/deleteService/:id", (req, res) => {
   const sql = "DELETE FROM services WHERE id = ?";
 
   // Execute the SQL query with the service ID as a parameter
-  pool.query(sql, [serviceId], (err, result) => {
+  connection.query(sql, [serviceId], (err, result) => {
     if (err) {
       console.error("Error deleting service:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -2230,7 +2230,7 @@ app.put("/api/updateService/:id", (req, res) => {
   const sql = "UPDATE services SET label = ? WHERE id = ?";
 
   // Execute the SQL query
-  pool.query(sql, [label, id], (err, result) => {
+  connection.query(sql, [label, id], (err, result) => {
     if (err) {
       console.error("Error updating service:", err);
       return res.status(500).json({ error: "Failed to update service" });
@@ -2247,7 +2247,7 @@ app.put("/api/updateThemeStatus", async (req, res) => {
     const { isActive } = req.body;
 
     // Update the status of rooms in the database
-    pool.query("UPDATE admin SET theme = ? WHERE id = 1", [isActive]);
+    connection.query("UPDATE admin SET theme = ? WHERE id = 1", [isActive]);
 
     // Send a success response to the client
     res.status(200).json({ message: "Status updated successfully" });
@@ -2261,7 +2261,7 @@ app.put("/api/updateThemeStatus", async (req, res) => {
 app.get("/api/getThemeStatus", async (req, res) => {
   const sql = "SELECT theme from admin where id = 1";
 
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.log("Error fetching theme status");
       res.status(500).send("Error fetching theme status");
@@ -2274,7 +2274,7 @@ app.get("/api/getThemeStatus", async (req, res) => {
 
 app.get("/api/getRoomTypes", async (req, res) => {
   const sql = "SELECT room_type FROM rooms ";
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.log("Error fetching Room types ");
       res.status(500).send("Error fetching Room types");
@@ -2307,7 +2307,7 @@ app.put("/api/updateRoomType/:id", (req, res) => {
     "UPDATE rooms SET no_of_rooms = ?, currently_available = ?, price = ?, tax = ? WHERE id = ?";
 
   // Execute the SQL query
-  pool.query(sql, [occupancy, available, price, tax, id], (err, result) => {
+  connection.query(sql, [occupancy, available, price, tax, id], (err, result) => {
     if (err) {
       console.error("Error updating room type:", err);
       return res.status(500).json({ error: "Failed to update room type" });
@@ -2330,7 +2330,7 @@ app.post("/api/addRoomType", (req, res) => {
   const sql = "INSERT INTO rooms (room_type) VALUES (?)";
 
   // Execute the SQL query
-  pool.query(sql, [newRoomType], (err, result) => {
+  connection.query(sql, [newRoomType], (err, result) => {
     if (err) {
       console.error("Error adding new room type:", err);
       return res.status(500).json({ error: "Failed to add new room type" });
@@ -2358,7 +2358,7 @@ app.post("/api/save-expenses", (req, res) => {
   const sql = "UPDATE bookings SET expenses = ? WHERE id = ?";
 
   // Execute the SQL query
-  pool.query(sql, [formattedExpenses, bookingId], (err, result) => {
+  connection.query(sql, [formattedExpenses, bookingId], (err, result) => {
     if (err) {
       console.error("Error updating expenses:", err);
       return res.status(500).json({ error: "Failed to update expenses" });
@@ -2376,7 +2376,7 @@ app.get("/api/get-expenses/:bookingId", (req, res) => {
   const sql = "SELECT expenses FROM bookings WHERE id = ?";
 
   // Execute the SQL query
-  pool.query(sql, [bookingId], (err, result) => {
+  connection.query(sql, [bookingId], (err, result) => {
     if (err) {
       console.error("Error retrieving expenses:", err);
       return res
@@ -2400,7 +2400,7 @@ app.get("/api/get-expenses/:bookingId", (req, res) => {
 app.get("/api/fetchBookingDetails/:bookingId", (req, res) => {
   const bookingId = req.params.bookingId;
   const query = "SELECT * FROM bookings WHERE id = ?"; // Replace 'bookings' with your actual table name
-  pool.query(query, [bookingId], (err, rows) => {
+  connection.query(query, [bookingId], (err, rows) => {
     if (err) {
       console.error("Error executing MySQL query:", err);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -2448,7 +2448,7 @@ app.post(
       const serviceId = req.query.serviceId; // Retrieve service ID from the query parameters
 
       // Update service image URL in the database for the corresponding service ID
-      pool.query(
+      connection.query(
         "UPDATE services SET picture = ? WHERE id = ?",
         [imageUrl, serviceId],
         (error, results) => {
@@ -2496,7 +2496,7 @@ app.put(
       const updatedImageUrl = `/uploads/serviceimages/${req.file.filename}`;
 
       // Update the image URL in the database
-      pool.query(
+      connection.query(
         "UPDATE services SET picture = ? WHERE id = ?",
         [updatedImageUrl, serviceId],
         (error, results) => {
@@ -2528,7 +2528,7 @@ app.delete("/api/deleteServiceImage", async (req, res) => {
     const { serviceId } = req.query;
 
     // First, fetch the image URL from the database
-    pool.query(
+    connection.query(
       "SELECT picture FROM services WHERE id = ?",
       [serviceId],
       async (error, results) => {
@@ -2551,7 +2551,7 @@ app.delete("/api/deleteServiceImage", async (req, res) => {
         }
 
         // Delete the image URL from the database
-        pool.query(
+        connection.query(
           "UPDATE services SET picture = NULL WHERE id = ?",
           [serviceId],
           (error, results) => {
@@ -2598,7 +2598,7 @@ app.get("/api/getServiceImages", (req, res) => {
   // Query to fetch images and ids from the database
   const sql = "SELECT id, picture FROM services";
 
-  pool.query(sql, (err, results) => {
+  connection.query(sql, (err, results) => {
     if (err) {
       console.error("Error fetching images from database:", err);
       res.status(500).json({ error: "Internal Server Error" });
@@ -2642,7 +2642,7 @@ app.post("/siteLogoUpload", logoUpload.single("image"), async (req, res) => {
     }
 
     // Retrieve the previous image URL from the database
-    pool.query(
+    connection.query(
       "SELECT logo FROM admin WHERE id = 1",
       (error, results) => {
         if (error) {
@@ -2659,7 +2659,7 @@ app.post("/siteLogoUpload", logoUpload.single("image"), async (req, res) => {
         const imageUrl = `/uploads/sitelogo/${req.file.filename}`;
 
         // Update service image URL in the database for the corresponding service ID
-        pool.query(
+        connection.query(
           "UPDATE admin SET logo = ? WHERE id = 1",
           [imageUrl],
           (error, results) => {
@@ -2708,7 +2708,7 @@ app.get("/api/fetchSiteLogo", (req, res) => {
   // Query to fetch the logo URL from the database
   const sql = "SELECT logo FROM admin WHERE id = 1"; // Assuming the logo is stored in the admin table with id 1
 
-  pool.query(sql, (err, results) => {
+  connection.query(sql, (err, results) => {
     if (err) {
       console.error("Error fetching logo from database:", err);
       res.status(500).json({ error: "Internal Server Error" });
@@ -2742,7 +2742,7 @@ app.get("/api/monthlydata", (req, res) => {
     GROUP BY YEAR(STR_TO_DATE(check_in, '%a %b %d %Y')), MONTH(STR_TO_DATE(check_in, '%a %b %d %Y'))
     ORDER BY YEAR(STR_TO_DATE(check_in, '%a %b %d %Y')), MONTH(STR_TO_DATE(check_in, '%a %b %d %Y'));
   `;
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching monthly data:", err);
       res.status(500).send("Error fetching monthly data");
@@ -2765,7 +2765,7 @@ app.get("/api/roomtypestats", (req, res) => {
     GROUP BY roomType;
   `;
 
-  pool.query(sql, (err, result) => {
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching room type stats:", err);
       res.status(500).send("Error fetching room type stats");
