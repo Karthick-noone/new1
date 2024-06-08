@@ -42,13 +42,13 @@ app.use(cors());
 //   password: "",
 //   database: "fabro",
 // });
-pool.connect((err) => {
-  if (err) {
-    console.error("Error connecting to MySQL database:", err);
-    return;
-  }
-  console.log("Connected to MySQL database");
-});
+// pool.connect((err) => {
+//   if (err) {
+//     console.error("Error connecting to MySQL database:", err);
+//     return;
+//   }
+//   console.log("Connected to MySQL database");
+// });
 
 // Establish database connection
 // pool.getConnection((err, connection) => {
