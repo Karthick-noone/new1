@@ -2730,6 +2730,70 @@ app.get("/api/fetchSiteLogo", (req, res) => {
   });
 });
 
+
+app.get("/api/monthlydata", (req, res) => {
+  const sql = `
+    SELECT 
+      DATE_FORMAT(STR_TO_DATE(check_in, '%a %b %d %Y'), '%b %Y') as month, 
+      SUM(paid_amount) as earnings, 
+      COUNT(*) as bookings
+    FROM bookings
+    WHERE check_in IS NOT NULL
+    GROUP BY YEAR(STR_TO_DATE(check_in, '%a %b %d %Y')), MONTH(STR_TO_DATE(check_in, '%a %b %d %Y'))
+    ORDER BY YEAR(STR_TO_DATE(check_in, '%a %b %d %Y')), MONTH(STR_TO_DATE(check_in, '%a %b %d %Y'));
+  `;
+  pool.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error fetching monthly data:", err);
+      res.status(500).send("Error fetching monthly data");
+      return;
+    }
+    console.log("Monthly data fetched successfully:", result);
+    res.json(result);
+  });
+});
+
+// API code to fetch room type statistics
+
+app.get("/api/roomtypestats", (req, res) => {
+  const sql = `
+    SELECT
+      SUBSTRING_INDEX(room_type, ' - ', 1) AS roomType,
+      SUM(SUBSTRING_INDEX(room_type, ' - ', -1)) AS bookings
+    FROM bookings
+    WHERE room_type IS NOT NULL
+    GROUP BY roomType;
+  `;
+
+  pool.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error fetching room type stats:", err);
+      res.status(500).send("Error fetching room type stats");
+      return;
+    }
+
+    // Filter out entries with roomType as 'Luxury Room, Single Room' or 'undefined'
+    const filteredResult = result.filter(item => 
+      item.roomType !== 'Luxury Room, Single Room' && item.roomType !== 'undefined' && item.roomType !== ''
+    );
+
+    // Calculate total bookings
+    const totalBookings = filteredResult.reduce((acc, curr) => acc + curr.bookings, 0);
+
+    // Format room types and calculate percentage
+    const roomTypeStats = filteredResult.map(item => ({
+      roomType: item.roomType,
+      bookings: item.bookings,
+      percentage:  Math.round((item.bookings / totalBookings) * 100),
+    }));
+
+    console.log("Room type stats fetched successfully:", roomTypeStats);
+    res.json(roomTypeStats);
+  });
+});
+
+
+
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
